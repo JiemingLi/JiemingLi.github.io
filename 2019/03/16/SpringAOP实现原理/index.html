@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="Hexo, JieMing">
+  <meta name="keywords" content="Spring,Java框架,">
 
 
 
@@ -79,16 +79,21 @@
 
 
 
-<meta name="description" content="记录学习的过程，加深印象！">
-<meta property="og:type" content="website">
-<meta property="og:title" content="小铭同学的博客">
-<meta property="og:url" content="http://yoursite.com/index.html">
+<meta name="description" content="在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程 编译：  .java 被编译为 .class（字节码文件），也就是源程序被转化为二进制文件 加载：   在执行java程序之前，会先对这个java程序的字节码文件进行检查，如果发现某个加类载器加载过这个字节码文件，则会使用。当找完所有类加载器，发现这个程序没有被加载进JVM运行数据的加载区的时候，则会进行加载。 连接">
+<meta name="keywords" content="Spring,Java框架">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SpringAOP实现原理">
+<meta property="og:url" content="http://yoursite.com/2019/03/16/SpringAOP实现原理/index.html">
 <meta property="og:site_name" content="小铭同学的博客">
-<meta property="og:description" content="记录学习的过程，加深印象！">
+<meta property="og:description" content="在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程 编译：  .java 被编译为 .class（字节码文件），也就是源程序被转化为二进制文件 加载：   在执行java程序之前，会先对这个java程序的字节码文件进行检查，如果发现某个加类载器加载过这个字节码文件，则会使用。当找完所有类加载器，发现这个程序没有被加载进JVM运行数据的加载区的时候，则会进行加载。 连接">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/2019/03/16/SpringAOP实现原理/res1.png">
+<meta property="og:image" content="http://yoursite.com/2019/03/16/SpringAOP实现原理/res2.png">
+<meta property="og:updated_time" content="2019-03-16T16:47:36.771Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="小铭同学的博客">
-<meta name="twitter:description" content="记录学习的过程，加深印象！">
+<meta name="twitter:title" content="SpringAOP实现原理">
+<meta name="twitter:description" content="在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程 编译：  .java 被编译为 .class（字节码文件），也就是源程序被转化为二进制文件 加载：   在执行java程序之前，会先对这个java程序的字节码文件进行检查，如果发现某个加类载器加载过这个字节码文件，则会使用。当找完所有类加载器，发现这个程序没有被加载进JVM运行数据的加载区的时候，则会进行加载。 连接">
+<meta name="twitter:image" content="http://yoursite.com/2019/03/16/SpringAOP实现原理/res1.png">
 
 
 
@@ -118,13 +123,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/">
+  <link rel="canonical" href="http://yoursite.com/2019/03/16/SpringAOP实现原理/">
 
 
 
 
 
-  <title>小铭同学的博客</title>
+  <title>SpringAOP实现原理 | 小铭同学的博客</title>
   
 
 
@@ -143,8 +148,7 @@
     
   
 
-  <div class="container sidebar-position-right 
-  page-home">
+  <div class="container sidebar-position-right page-post-detail">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -247,9 +251,9 @@
         <div class="content-wrap">
           <div id="content" class="content">
             
-  <section id="posts" class="posts-expand">
+
+  <div id="posts" class="posts-expand">
     
-      
 
   
 
@@ -279,9 +283,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/16/SpringAOP实现原理/" itemprop="url">SpringAOP实现原理</a></h1>
+          <h1 class="post-title" itemprop="name headline">SpringAOP实现原理</h1>
         
 
         <div class="post-meta">
@@ -353,9 +355,7 @@
       
 
       
-        
-          
-            <h3 id="在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程"><a href="#在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程" class="headerlink" title="在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程"></a>在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程</h3><ul>
+        <h3 id="在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程"><a href="#在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程" class="headerlink" title="在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程"></a>在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程</h3><ul>
 <li><strong>编译</strong>：  <em>.java 被编译为 </em>.class（字节码文件），也就是源程序被转化为二进制文件</li>
 <li><strong>加载</strong>：   在执行java程序之前，会先对这个java程序的字节码文件进行检查，如果发现某个加类载器加载过这个字节码文件，则会使用。当找完所有类加载器，发现这个程序没有被加载进JVM运行数据的加载区的时候，则会进行加载。</li>
 <li>连接，类初始化，内存分配。</li>
@@ -417,8 +417,6 @@
 <li><a href="https://www.cnblogs.com/leifei/p/8263448.html" target="_blank" rel="noopener">https://www.cnblogs.com/leifei/p/8263448.html</a></li>
 </ol>
 
-          
-        
       
     </div>
     
@@ -433,407 +431,36 @@
 
     <footer class="post-footer">
       
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/16/hello-Hexo/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="JieMing小铭">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/love.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="小铭同学的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/16/hello-Hexo/" itemprop="url">hello,Hexo</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-16T15:34:13+08:00">
-                2019-03-16
-              </time>
-            
-
-            
-
-            
-          </span>
-
+        <div class="post-tags">
           
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/博客/" itemprop="url" rel="index">
-                    <span itemprop="name">博客</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
+            <a href="/tags/Spring-Java框架/" rel="tag"># Spring,Java框架</a>
           
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
         </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>​       你好啊，第一次使用hexo</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
       
 
       
       
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
       
 
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/16/transport/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="JieMing小铭">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/love.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="小铭同学的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/16/transport/" itemprop="url">计算机网络--传输层</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
             
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-16T00:00:00+08:00">
-                2019-03-16
-              </time>
+              <a href="/2019/03/16/hello-Hexo/" rel="next" title="hello,Hexo">
+                <i class="fa fa-chevron-left"></i> hello,Hexo
+              </a>
             
+          </div>
 
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
             
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/计算机网络/" itemprop="url" rel="index">
-                    <span itemprop="name">计算机网络</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
+          </div>
         </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
       
 
       
-        
-          
-            <h2 id="传输层"><a href="#传输层" class="headerlink" title="传输层"></a>传输层</h2><ul>
-<li><h3 id="协议"><a href="#协议" class="headerlink" title="协议"></a>协议</h3><ol>
-<li>TCP 传输控制协议 <ul>
-<li>将需要传输的数据进行分段并编号。</li>
-<li>建立会话 实现可靠传输，当有部分数据没有到达时，会通知发送方继续传输丢失的部分数据。</li>
-<li>流量控制 流量不匹配时，会通知发送数据方控制速度。</li>
-</ul>
-</li>
-<li>UDP 用户数据报协议<ul>
-<li>一个数据包就可以实现传输</li>
-<li>不分段</li>
-<li>不建立会话，所以不是可靠传输</li>
-<li>不需要流量控制</li>
-</ul>
-</li>
-</ol>
-</li>
-<li><h4 id="服务和应用层协议的关系"><a href="#服务和应用层协议的关系" class="headerlink" title="服务和应用层协议的关系"></a>服务和应用层协议的关系</h4><ul>
-<li>服务使用TCP或者UDP的端口侦听客户端的请求</li>
-<li>客户端使用IP地址定位服务器的位置，端口定位服务</li>
-<li>可以在服务器的网卡设定特定的端口开放，实现服务器网络安全</li>
-</ul>
-</li>
-<li><h3 id="安全"><a href="#安全" class="headerlink" title="安全"></a>安全</h3><ul>
-<li>查看端口开放的情况 netstat -n, netstat-a    ,netstat -an  ,netstat -nb</li>
-<li>测试端口是否开放和连接 telnet ip port</li>
-<li>回环地址 127.0.0.1 不经过网卡</li>
-<li>在网卡设置特定的端口开放</li>
-</ul>
-</li>
-<li><h3 id="邮件发送的过程"><a href="#邮件发送的过程" class="headerlink" title="邮件发送的过程"></a>邮件发送的过程</h3><ul>
-<li>用户将写好的邮件发送给邮件服务器，用的是SMTP协议，则服务器要有SMTP的服务和开放25端口。也就是写好的邮件发给 邮件服务器Ip:25。</li>
-<li>邮件服务器收到邮件之后，则把数据放到缓存队列当中，然后运行SMTP协议的进程的邮件服务器和接受端的邮件服务器建立TCP连接，然后发送邮件</li>
-<li>当邮件到达对方的邮件服务器的时候，用户查看收件箱，则会用POP3协议，也就是向接收端邮件服务器110端口访问，则会返回邮件。</li>
-</ul>
-</li>
-</ul>
-<p>端口 16位来表示</p>
-<ol>
-<li>熟知端口 0-1023   计算机本来就有的端口</li>
-<li>登录端端口 1024 - 49151   服务开发商在组织注册的端口</li>
-<li>客户端端口49152 - 65535</li>
-</ol>
-<p>segment （分段）:  传输层</p>
-<p>package （封装成包） :  网络层</p>
-<p>fragment （分片）: 数据链路层</p>
-<h3 id="UDP"><a href="#UDP" class="headerlink" title="UDP"></a>UDP</h3><ol>
-<li><p>面向无连接服务，发送数据之前不需要建立连接</p>
-</li>
-<li><p>尽最大努力交付，一个数据包就完事，不保证可靠传输，也不保证拥塞控制</p>
-</li>
-<li><p>面向报文，适合多媒体传输</p>
-</li>
-<li><p>一对多，一对一，多对多通信方式</p>
-</li>
-<li><p>首部开销只有8个字节</p>
-</li>
-<li><p>UDP首部的检验和的值是<strong>计算伪首部的长度（网络层的一些信息）加上UDP数据包的长度之和</strong></p>
-<p><img src="/2019/03/16/transport/fake-head.png" alt="fake-head"></p>
-</li>
-</ol>
-<h3 id="TCP"><a href="#TCP" class="headerlink" title="TCP"></a>TCP</h3><ol>
-<li>面向连接得服务</li>
-<li>全双工通信</li>
-<li>面向字节流传输数据 ：把文件按照字节，随机传输到TCP缓存区，然后又随机地按照字节进行封装，传输到接收方的TCP缓存接收区，接收方的缓存区再随机地将字节传输到上层，按字节组成文件</li>
-<li>每一条TCP连接只有两个端点，只能是点到点通信 ：套接字表示点（IP+PORT）</li>
-<li>提供可靠交付通信</li>
-</ol>
-<p>TCP实现可靠传输</p>
-<ol>
-<li>ARQ协议</li>
-<li>停等</li>
-<li>滑动窗口发送 固定的滑动窗口，发送滑动窗口内的字节，收到滑动窗口第一个字节的确认之后，往后移，缓存区掉字节，然后再把滑动窗口内未发送的字节发送出去</li>
-<li>累计确认 连续发送几个字节的数据，如果前面无差错，则发送最后一个字节的确认，如果有差错，则发送最后一个连续的最后一个字节的确认</li>
-</ol>
-<p>TCP实现流量控制</p>
-<ol>
-<li>不断地调整接收端的接收窗口，从而调整发送端的发送窗口，进行流量的控制。</li>
-</ol>
-<h3 id="三次握手"><a href="#三次握手" class="headerlink" title="三次握手"></a>三次握手</h3><ol>
-<li>有syn，ack，seq，并且告诉对方能接收的最长字节（mms）和接受缓存区的大小。</li>
-<li>当一方收到另外一方的数据之后，根据发过来的接受缓冲区的大小设置发送窗口的大小，值和收到的接受缓冲区大小的值一样</li>
-</ol>
-<h3 id="拥塞避免"><a href="#拥塞避免" class="headerlink" title="拥塞避免"></a>拥塞避免</h3><ol>
-<li>发送窗口刚开始由拥塞窗口控制，到后面由接受窗口控制 发送窗口 = min(rwind,gwind)，通过拥塞窗口去设置发送窗口。</li>
-<li>快重传 当接受端发现有数据缺失的时候，连续发送三个确认信号，即表示当前网络快要发生拥塞，让发送窗口做出调整，更好地实现拥塞避免。</li>
-</ol>
-<h3 id="TCP建立连接"><a href="#TCP建立连接" class="headerlink" title="TCP建立连接"></a>TCP建立连接</h3><ol>
-<li>三次握手<ol>
-<li><ul>
-<li>对于<strong>客户端</strong>来说，为了证明到达服务端是畅通的，所以要得到确认才可以认为是客户端到服务端是通的，而这个确认就是从服务端发送来。</li>
-<li>对于<strong>服务端</strong>来说，为了证明到客户端是畅通的，所以要得到确认才可以认为是客户端到服务端是通的，这个确认是由客户端发送来。</li>
-</ul>
-</li>
-<li>三次握手的本质就是 我发信息给你，你让我知道你收得到，你发信息给我，我发信息给你让你知道我收得到。</li>
-</ol>
-</li>
-<li>参考：<a href="https://www.cnblogs.com/zhuzhenwei918/p/7465467.html，https://blog.csdn.net/lengxiao1993/article/details/82771768" target="_blank" rel="noopener">https://www.cnblogs.com/zhuzhenwei918/p/7465467.html，https://blog.csdn.net/lengxiao1993/article/details/82771768</a></li>
-</ol>
-<h3 id="TCP-释放连接"><a href="#TCP-释放连接" class="headerlink" title="TCP 释放连接"></a>TCP 释放连接</h3><ul>
-<li>四次挥手<ul>
-<li>客户端：需要释放连接 FIN</li>
-<li>服务端：我收到你的要求了(ACK)，不过得等下，你先别说话（客户端不可以向服务端发送数据），让我把剩下的话说完(传输未传输完成的数据) </li>
-<li>服务端：好的，我说完了，我可以不说了 FIN</li>
-<li>客户端：好,我收到信息了（ACK）</li>
-<li>客户端等待2MSL，确认服务端收到信息，如果服务端收不到信息，则会重发数据，这样客户端也可以及时做出响应。</li>
-</ul>
-</li>
-<li>参考 ：<a href="https://www.cnblogs.com/zhuzhenwei918/p/7465467.html" target="_blank" rel="noopener">https://www.cnblogs.com/zhuzhenwei918/p/7465467.html</a></li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
       
     </footer>
   </div>
@@ -843,193 +470,11 @@
   </article>
 
 
-    
-      
 
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/10/网络层/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="JieMing小铭">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/love.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="小铭同学的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/10/网络层/" itemprop="url">计算机网络--网络层</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-10T00:00:00+08:00">
-                2019-02-10
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/计算机网络/" itemprop="url" rel="index">
-                    <span itemprop="name">计算机网络</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="服务"><a href="#服务" class="headerlink" title="服务"></a>服务</h2><ol>
-<li>选择路径，尽可能地转发数据包，不负责数据包的丢失和接收顺序的处理，该功能由传输层实现。</li>
-</ol>
-<h2 id="协议"><a href="#协议" class="headerlink" title="协议"></a>协议</h2><ol>
-<li><p>Arp 将目标IP地址广播，目标MAC地址是ff-ff-ff-ff-ff-ff(广播MAC地址)，扫描<strong><em>本网段</em></strong>的MAC地址，得到最终目标IP地址所对应的MAC地址</p>
-</li>
-<li><p>静态修改IP地址对应的MAC地址 arp -s (static) 目标IP 最终修改的MAC</p>
-<h4 id="ICMP"><a href="#ICMP" class="headerlink" title="ICMP"></a>ICMP</h4><ul>
-<li>ping 命令就是实现ICMP协议</li>
-<li>ping ip -t 不断ping目标IP</li>
-<li>ping ip -i size设置TTL为size,可以跟踪数据报途径的路由器</li>
-<li>目标不可到达是数据帧没有到达目标主机的路径，路由器会发一个ICMP的数据给源主机</li>
-<li>请求超时是数据帧到达目标主机了，但是目标主机传回不了给源主机，源主机一直收不到回应，则超时</li>
-<li>pathping :追踪数据报的路径，并计算丢包情况</li>
-<li>tracert ip :跟踪数据的转发路径</li>
-</ul>
-<h4 id="IGMP"><a href="#IGMP" class="headerlink" title="IGMP"></a>IGMP</h4><ul>
-<li>点到点：可以建立会话，全双工通信</li>
-<li>广播</li>
-<li>多播：计算机的网卡可以绑定多播地址，不同的多播地址可以收到不同的数据帧，可以跨网段多播。优点：节省带宽。如果某个网段没有绑定对应的多播地址，则此网段将不会收到多播的数据。</li>
-</ul>
-<h4 id="IP"><a href="#IP" class="headerlink" title="IP"></a>IP</h4><ul>
-<li>IP地址的首部固定长度为20个字节</li>
-<li>IP地址的总长度最大为65535个字节</li>
-<li>数据帧的数据部分最短为46个字节，最长为1500个字节</li>
-<li>数据帧的数据部分的长度 = IP首部（20个字节） + 数据段的长度（TCP/UDP首部+数据长度）&lt;=1500bytes</li>
-<li>如果IP一层的数据包长度大于1500个字节，则需要在数据链路层进行分片，然后加上IP地址，再进行帧封装</li>
-<li>接受端的网络层如果收到分片的数据帧上传的数据包，则进行组合，再传给传输层。</li>
-<li>首部的标识是指数据包的编号（传输层进行分段，网络层封装成数据包），标记 是如果数据包分片，则表是是第几片，是不是最后一片等信息。</li>
-<li><p>MTU:最大传输单元属于 IP层 &lt;=1500  ， MSS(不包括TCP头部):maxnum segment  size 属于传输层 mss &lt;= 1460</p>
-</li>
-<li><p>如果传输层的MSS &gt; 1460 也就是说在MTU会大于1500，则会在网络层进行分片。</p>
-</li>
-<li><p>但是分片会花费主机，路由器更多的时间和CPU资源去处理分片，比如分片重组等等。   也可以不进行分片，</p>
-</li>
-<li><p>如果MSS&gt;1460则丢掉，然后返回主机一个ICMP数据包。</p>
-</li>
-<li><p>（例子）ICMP协议里有type字段，还有code字段，发送type=3，code=4，MTU=1000的消息就可以了</p>
-</li>
-</ul>
-</li>
-</ol>
-
-          
-        
+    <div class="post-spread">
       
     </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
   </div>
-  
-  
-  
-  </article>
-
-
-    
-  </section>
-
-  
 
 
           </div>
@@ -1037,6 +482,10 @@
 
 
           
+
+  
+
+
 
         </div>
         
@@ -1057,8 +506,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -1120,6 +578,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程"><span class="nav-number">1.</span> <span class="nav-text">在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SringAOP的动态代理方式"><span class="nav-number">2.</span> <span class="nav-text">SringAOP的动态代理方式</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#何为代理？"><span class="nav-number">2.0.1.</span> <span class="nav-text">何为代理？</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#在Spring中为什么要代理？"><span class="nav-number">2.0.2.</span> <span class="nav-text">在Spring中为什么要代理？</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#JDK动态代理"><span class="nav-number">2.0.3.</span> <span class="nav-text">JDK动态代理</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#CgLib实现动态代理"><span class="nav-number">2.0.4.</span> <span class="nav-text">CgLib实现动态代理</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#总结"><span class="nav-number">2.0.5.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
@@ -1260,6 +734,10 @@
 
 
   
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
 
   
 
