@@ -262,6 +262,156 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/23/Mybatis基于JDK动态代理的理解/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="JieMing小铭">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/head.JPG">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="小铭同学的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/23/Mybatis基于JDK动态代理的理解/" itemprop="url">未命名</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-23T15:48:06+08:00">
+                2019-03-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Mybatis关于JDK动态代理的实现的总结"><a href="#Mybatis关于JDK动态代理的实现的总结" class="headerlink" title="Mybatis关于JDK动态代理的实现的总结"></a>Mybatis关于JDK动态代理的实现的总结</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>了解过Java关于JDK的动态代理之后，了解到平常用的Mybatis框架也是基于JDK动态代理实现对数据库的CRUD的，所以上网查资料，其中找到一片写得不错得博客觉得分析得已经很到位，本来想自己写一片文章的，由于自己学识尚浅，所以就索性站在巨人的肩膀上，去进行一个总结，其中有一节晦涩难懂的代码实在是看不懂，所以就放在一边了。虽然说没能写出一片分析的文章，但是通过分析和总结之后，自己对Mybatis的底层机制有了一定的了解，起码往知其然也知其所以然的方向去发展了。</p>
+<p><strong>建议</strong>：在阅读Mybatis关于JDK动态代理的实现的时候，先去了解<a href="https://blog.csdn.net/qq_37469998/article/details/88729423" target="_blank" rel="noopener">Java反射</a>和Java关于<a href="https://github.com/JiemingLi/JavaAopLearning" target="_blank" rel="noopener">JDK的动态代理</a>。</p>
+<h2 id="内容"><a href="#内容" class="headerlink" title="内容"></a>内容</h2><p>Mybatis关于包装Mapper的代码都在org.apache.ibatis.binding 这个包下面，其中有4个类： </p>
+<p><strong>MapperRegistry</strong> 类是注册<strong>Mapper接口</strong>与获取<strong>代理类实例</strong>的工具类。</p>
+<ul>
+<li>先执行addMapper函数，也就是先注册Mapper接口到一个map里面，以Mapper接口的type为key,MapperProxyFactory为value。</li>
+<li>然后在getMapper的时候，找到Mapper接口类型所对应的MapperProxyFactory对象，然后执行MapperProxyFactory对象的newInstance(SqlSession)函数。</li>
+</ul>
+<p><strong>MapperProxyFactory</strong>是创建Mapper接口代理对象的工厂类</p>
+<ul>
+<li>newInstance(SqlSession sqlSession) 则表示创建了MapperProxy对象，MapperProxy实现了JDK动态代理的接口，InvocationHandler</li>
+</ul>
+<p><strong>MapperProxy</strong>对象在进行执行函数的时候，会回调MapperProxy对象的invoke回调函数</p>
+<ul>
+<li>对所需要执行的具体方法进行缓存，缓存到一个map，键是method对象，值是一个MapperMethod对象</li>
+<li>MapperMethod是对<strong>Sqlsession对象的操作</strong>封装好的类，所以关于数据库的操作就处于MapperMethod对象中</li>
+</ul>
+<p><strong>MapperMethod</strong>类中有两个内部类</p>
+<ol>
+<li>SqlCommand:封装了SQL标签的类型和具体的执行操作<ul>
+<li>SqlCommand类和底层的CRUD的操作有关。</li>
+<li>Mybatis框架会把XML配置文件的每一个节点，比如说select,update等等节点生成一个MapperStatment类。要获得这个类，就必须通过SqlSession的Configuration对象的getMapperStatment(String id)来获取，这个ID就是接口的类名+XML文件每一个节点的id属性。</li>
+<li>在获得这个MapperStatment对象之后，就可以把SqlCommand的属性进行赋值了。</li>
+</ul>
+</li>
+<li>MethodSignature：封装了方法的参数信息，返回信息</li>
+<li>根据SqlCommand对象和MethodSignature对象的方法和属性，进行一系列的判断就可以通过sqlSession进行对数据库的操作了。</li>
+</ol>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="https://blog.csdn.net/xiaokang123456kao/article/details/76228684" target="_blank" rel="noopener">https://blog.csdn.net/xiaokang123456kao/article/details/76228684</a></li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/18/java反射理解/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1594,7 +1744,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-count">7</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
