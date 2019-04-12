@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="基础，Java,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="前提计算机在执行程序代码的时候，实际上执行的是一条条指令，而这些指令，肯定会涉及到数据的读取和写入操作。 在我们的程序中，所定义的变量等临时数据，计算机会放在内存中，也称为主存。 那么问题来了，CPU执行指令的速度是很快的，但是从内存中读取数据和写入数据的过程，相比CPU执行指令的速度来说是比较慢的。如果每个程序都是直接从内存中读取数据，那么由于CPU执行指令的速度和数据的读取写入操作的速度不一致">
+<meta name="keywords" content="基础，Java">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一篇文章读懂volatile">
+<meta property="og:url" content="http://yoursite.com/2019/04/11/一篇文章读懂volatile/index.html">
+<meta property="og:site_name" content="小铭同学的博客">
+<meta property="og:description" content="前提计算机在执行程序代码的时候，实际上执行的是一条条指令，而这些指令，肯定会涉及到数据的读取和写入操作。 在我们的程序中，所定义的变量等临时数据，计算机会放在内存中，也称为主存。 那么问题来了，CPU执行指令的速度是很快的，但是从内存中读取数据和写入数据的过程，相比CPU执行指令的速度来说是比较慢的。如果每个程序都是直接从内存中读取数据，那么由于CPU执行指令的速度和数据的读取写入操作的速度不一致">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Ygy1g1zzzyduacj31jk0uc40h.jpg">
+<meta property="og:updated_time" content="2019-04-12T10:07:13.354Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="一篇文章读懂volatile">
+<meta name="twitter:description" content="前提计算机在执行程序代码的时候，实际上执行的是一条条指令，而这些指令，肯定会涉及到数据的读取和写入操作。 在我们的程序中，所定义的变量等临时数据，计算机会放在内存中，也称为主存。 那么问题来了，CPU执行指令的速度是很快的，但是从内存中读取数据和写入数据的过程，相比CPU执行指令的速度来说是比较慢的。如果每个程序都是直接从内存中读取数据，那么由于CPU执行指令的速度和数据的读取写入操作的速度不一致">
+<meta name="twitter:image" content="http://ww1.sinaimg.cn/large/006ozI4Ygy1g1zzzyduacj31jk0uc40h.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"right","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/04/11/一篇文章读懂volatile/">
+
+
+
+
+
+  <title>一篇文章读懂volatile | 小铭同学的博客</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">小铭同学的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-something">
+          <a href="/something/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br>
+            
+            something
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/04/11/一篇文章读懂volatile/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="JieMing小铭">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/head.JPG">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="小铭同学的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">一篇文章读懂volatile</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-11T23:22:00+08:00">
+                2019-04-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java基础，并发/" itemprop="url" rel="index">
+                    <span itemprop="name">Java基础，并发</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="前提"><a href="#前提" class="headerlink" title="前提"></a>前提</h2><p>计算机在执行程序代码的时候，实际上执行的是一条条指令，而这些指令，肯定会涉及到数据的读取和写入操作。</p>
+<p>在我们的程序中，所定义的变量等临时数据，计算机会放在内存中，也称为主存。</p>
+<p>那么问题来了，CPU执行指令的速度是很快的，但是从内存中读取数据和写入数据的过程，相比CPU执行指令的速度来说是比较慢的。如果每个程序都是直接从内存中读取数据，那么由于CPU执行指令的速度和数据的读取写入操作的速度不一致，那么肯定会大大降低了执行的效率，所以在CPU里面引入了<strong>高速缓存</strong>。</p>
+<p>当程序在运行过程中，会将运算需要的数据从主存复制一份到CPU的高速缓存当中，那么CPU进行计算时就可以直接从它的高速缓存读取数据和向其中写入数据，当运算结束之后，再将高速缓存中的数据刷新到主存当中。</p>
+<hr>
+<h2 id="Java内存模型"><a href="#Java内存模型" class="headerlink" title="Java内存模型"></a>Java内存模型</h2><h3 id="内容"><a href="#内容" class="headerlink" title="内容"></a>内容</h3><p>Java程序的所有变量都存储在主内存中。我们知道，Java的每个线程在运行的时候，都会有自己的工作内存，线程所用的变量和数据都是用工作内存中的，工作内存的数据都是从主存中获取的。由于每个线程都是独立的，所以不同线程不可以相互访问工作内存的变量，只有通过主存还传递变量，当线程对数据进行操作之后，会把工作内存的数据刷新到主存，但是这个刷新的时间是不确定的。</p>
+<p><img src="http://ww1.sinaimg.cn/large/006ozI4Ygy1g1zzzyduacj31jk0uc40h.jpg" alt></p>
+<h3 id="多线程带来的脏读问题"><a href="#多线程带来的脏读问题" class="headerlink" title="多线程带来的脏读问题"></a>多线程带来的脏读问题</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> i = <span class="number">10</span></span><br><span class="line">i = i + <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li>单线程，i的值存放在内存中，当只有一个线程进行+1操作的时候，先从内存中读取I的值到线程自己的工作内存中，然后进行自增操作，然后写入到自己的工作内存，然后再刷新到主存中。</li>
+<li>多线程，如果同时有两个线程执行+1的操作，我们预期的效果i的值是12。可是在多核CPU中，两个线程可能会同时从内存读取i的值读取到工作内存，此时工作内存之间都是独立存在的。所以当一个线程对i的值进行+1，写到自己的工作内存，然后刷新到主存，此时主存I的值为11，另外一个线程由于是同时读取i的值，也就是读的时候是10，那么操作完成之后也是把主存值变为11，毕竟两个线程对i的操作都是一样嘛。这就不符合我们当初的预期了</li>
+</ol>
+<p>多线程引出的问题就是缓存一致性的问题了，被多个线程访问的变量i也被成为共享变量。</p>
+<p>那么问题来了，如何才能让多线程执行才能符合我们预期呢？<br>先了解并发编程的 <strong>原子性，可见性，有序性</strong> 吧！！！</p>
+<hr>
+<h2 id="并发编程特性"><a href="#并发编程特性" class="headerlink" title="并发编程特性"></a>并发编程特性</h2><h3 id="原子性"><a href="#原子性" class="headerlink" title="原子性"></a>原子性</h3><h4 id="内容-1"><a href="#内容-1" class="headerlink" title="内容"></a>内容</h4><p><strong>定义</strong></p>
+<p>一个操作或者多个操作要么全部执行并且执行的过程不会被任何因素打断，要么就都不执行。</p>
+<p><strong>实例</strong></p>
+<p>账户A给账户B进行银行转账1000元，包括两个操作 1. 账户A扣去1000元，2. 账户B加上1000元。</p>
+<p>实际中，这两个操作必须符合原子性，就是说，操作1和操作2要么一起执行，要么全部不执行。</p>
+<p>如果不符合原则性，那么会带来问题。当账户A扣去1000元的时候，操作由于某些原因突然中止，那么A账户已经扣去1000元了，可是操作2并没有执行，也就是账户B没有加上1000元，那么用户就白白损失了1000元了。</p>
+<h4 id="Java的原子性"><a href="#Java的原子性" class="headerlink" title="Java的原子性"></a>Java的原子性</h4><p><strong>定义</strong></p>
+<p>在Java内存模型中，只对<strong><em>变量的读取</em></strong>和<strong><em>用常量赋值给变量的操作</em></strong>是具有原子性。<br>变量给变量之间的相互赋值这个过程不具有原子性。<br>其他的地方，如果要实现更大范围的原子性，可用关键字Synchronized和Lock实现。</p>
+<p><strong>实例</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">x = <span class="number">10</span>;        <span class="comment">//语句1</span></span><br><span class="line">y = x;         <span class="comment">//语句2</span></span><br><span class="line">x++;           <span class="comment">//语句3</span></span><br><span class="line">x = x + <span class="number">1</span>;     <span class="comment">//语句4</span></span><br></pre></td></tr></table></figure>
+<p>由定义可知，只对<strong><em>变量的读取</em></strong>和<strong><em>用常量赋值给变量的操作</em></strong>是具有原子性</p>
+<p>语句1，满足常量赋值给变量的要求，整个操作符合原子性。</p>
+<p>语句2，包含两个操作，1 读取X变量的值，2 将读取到的值赋值给y变量。这两个操作只是各自符合原子性，但是合起来就不符合原子性。</p>
+<p>语句3 和语句4是一样的， 包含三个操作， 1 读取x变量的值 ， 2 对变量x进行+1 ，3 将步骤2所得的值赋值给变量x。和步骤2一行，独自的操作符合原子性，合在一起就不符合了。</p>
+<p>综上，除了语句1，其他语句如果在多线程的情况下执行，很有可能会出现和我们预想不到的结果。</p>
+<hr>
+<h3 id="有序性"><a href="#有序性" class="headerlink" title="有序性"></a>有序性</h3><h4 id="内容-2"><a href="#内容-2" class="headerlink" title="内容"></a>内容</h4><p>程序执行的顺序按照代码的先后顺序执行。</p>
+<p><strong>指令重排序</strong></p>
+<p>处理器为了提高程序运行效率，可能会对输入代码进行优化，也就是对执行指令进行重排序。它不保证程序中各个语句的执行先后顺序同代码中的顺序一致，但是它会保证程序最终执行结果和代码顺序执行的结果是一致的。</p>
+<p>如何保证指令顺序不一样但是执行的最终结果和代码顺序执行时一样的？</p>
+<p>处理器在进行重排序时是会考虑指令之间的数据依赖性，如果一个指令Instruction 2必须用到Instruction 1的结果，那么处理器会保证Instruction 1会在Instruction 2之前执行。</p>
+<p><em>TIP:指令重排序不会影响单个线程的执行结果，但是多线程则不一定。</em></p>
+<hr>
+<h4 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h4><h5 id="单线程"><a href="#单线程" class="headerlink" title="单线程"></a>单线程</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> i = <span class="number">0</span>;              </span><br><span class="line"></span><br><span class="line"><span class="keyword">boolean</span> flag = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">i = <span class="number">1</span>;                <span class="comment">//语句1  </span></span><br><span class="line">flag = <span class="keyword">true</span>;          <span class="comment">//语句2</span></span><br></pre></td></tr></table></figure>
+<p>语句1和语句2所代表的指令，相互之间并没有什么依赖关系，所以这两语句执行的顺序怎样都不会影响结果。也就是说</p>
+<p>可能是 1—&gt;2，也有可能是2—&gt;1，但不影响最终结果</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">10</span>;    <span class="comment">//语句1</span></span><br><span class="line"><span class="keyword">int</span> r = <span class="number">2</span>;    <span class="comment">//语句2</span></span><br><span class="line">a = a + <span class="number">3</span>;    <span class="comment">//语句3</span></span><br><span class="line">r = a*a;     <span class="comment">//语句4</span></span><br></pre></td></tr></table></figure>
+<p>我们看到，语句3依赖于语句1，语句4依赖于语句3，所以这个顺序肯定是不可以变的，正是因为这样，所以才可以保证指令重排序但是执行的结果依然不变。</p>
+<p>执行顺序可能是</p>
+<p>1-&gt;2-&gt;3-&gt;4</p>
+<p>2-&gt;1-&gt;3-&gt;4</p>
+<h5 id="多线程"><a href="#多线程" class="headerlink" title="多线程"></a>多线程</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">boolean</span> inited = <span class="keyword">false</span>;</span><br><span class="line"><span class="comment">//线程1:</span></span><br><span class="line">context = loadContext();   <span class="comment">//语句1</span></span><br><span class="line">inited = <span class="keyword">true</span>;             <span class="comment">//语句2</span></span><br><span class="line"></span><br><span class="line"> <span class="comment">//线程2:</span></span><br><span class="line"><span class="keyword">while</span>(!inited )&#123;</span><br><span class="line">   sleep()</span><br><span class="line">&#125;</span><br><span class="line">doSomethingwithconfig(context);</span><br></pre></td></tr></table></figure>
+<p>语句1和语句2并没有依赖关系，所以指令重排序之后，线程1可能会先执行语句2然后再执行语句1。可能会发生这种情况，线程1执行完语句2，由于某种原因发生了阻塞，线程2此时跳出死循环，然后执行到doSomethingwithconfig(context)</p>
+<p>可是context并没有被加载出来，那么很有可能会出现故障。</p>
+<p>综上：指令重排序不会影响单个线程的执行，但是会影响到线程并发执行的正确性。</p>
+<hr>
+<h4 id="Java的有序性"><a href="#Java的有序性" class="headerlink" title="Java的有序性"></a>Java的有序性</h4><p>Java内存模型本身就有一些有序性，也就是说不需要通过任何手段就能够得到保证的有序性。</p>
+<p>称为 happens-before原则。如果两个操作的执行次序无法从happens-before原则推导出来，那么它们就不能保证它们的有序性，虚拟机可以随意地对它们进行重排序。</p>
+<ol>
+<li>程序次序规则：一个线程内，按照代码顺序，书写在前面的操作先行发生于书写在后面的操作</li>
+<li>锁定规则：一个unLock操作先行发生于后面对同一个锁的lock操作</li>
+<li>volatile变量规则：对一个变量的写操作先行发生于后面对这个变量的读操作</li>
+<li>传递规则：如果操作A先行发生于操作B，而操作B又先行发生于操作C，则可以得出操作A先行发生于操作C</li>
+</ol>
+<p>1 2 4 都比较好理解，就不多多说，说下3</p>
+<p>volatile变量规则</p>
+<p>如果一个线程先去写一个变量，然后一个线程去进行读取，那么写入操作肯定会先行发生于读操作。（记住这句，后面分析的时候会用到）</p>
+<hr>
+<h2 id="理解volatile关键字"><a href="#理解volatile关键字" class="headerlink" title="理解volatile关键字"></a>理解volatile关键字</h2><h3 id="保证可见性"><a href="#保证可见性" class="headerlink" title="保证可见性"></a>保证可见性</h3><p>共享变量被volatile修饰之后，就说明有以下的特性</p>
+<ol>
+<li>不同线程对同一个变量进行操作时，线程1读取变量，进行修改，写入自己的工作内存，然后会强行刷新到内存中。<strong>如果线程2还没有对变量读取过</strong>，那么当线程2读取工作内存中的变量的时候，发现工作内存中给的变量已经失效，那么会直接去主存中读取最新的值。这也就保证了可见性！！</li>
+<li>禁止指令重排序。</li>
+</ol>
+<p><strong>实例</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//线程1</span></span><br><span class="line"><span class="keyword">boolean</span> stop = <span class="keyword">false</span>;</span><br><span class="line"><span class="keyword">while</span>(!stop)&#123;</span><br><span class="line">    doSomething();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//线程2</span></span><br><span class="line">stop = <span class="keyword">true</span>;</span><br></pre></td></tr></table></figure>
+<p>前提：我们期望线程2修改stop的值从而让线程1停止循环doSomething</p>
+<p>不用volatile关键字的问题</p>
+<p>线程2的语句有两个步骤，1、将true赋值给工作内存中的stop临时变量。 2、将工作内存中的临时变量更新到主存中，但是不是到什么时候更新。可是在执行步骤1之后，线程2可能去做其他事情了。从而导致并没有让主存的stop的值得到更新，那么线程1之前一直是读取工作内存中的值，那么如果某一时刻读取主存中的值的时候，那么stop的值还是没有改变，所以就会一直循环，不符合我们的预期。</p>
+<p>加了volatile关键字</p>
+<p>线程2还是有两个步骤，和上面的一样，区别在于步骤2，步骤2会马上将线程2的工作内存中的值设置到主存中，</p>
+<ol>
+<li><p>如果线程1还没有读取stop值，那么读取工作内存的时候会发现读取无效，则会到内存中读取。</p>
+</li>
+<li><p>如果线程1在工作内存无效之前已经读取过一次，那么下一次循环的时候（也就是线程2将主存的值更新并且设置线程1的工作内存无效）就会从内存中读取最新的值了！</p>
+</li>
+</ol>
+<p>所以加了关键字，这段代码可以不会发生我们的预期之外，你看神奇吧？！</p>
+<p><strong>原理</strong></p>
+<blockquote>
+<p>在多处理器环境下，为了保证各个处理器缓存一致，每个处理会通过嗅探在总线上传播的数据来检查 自己的缓存是否过期，当处理器发现自己缓存行对应的内存地址被修改了，就会将当前处理器的缓存行设置成无效状态，当处理器要对这个数据进行修改操作时，会强制重新从系统内存把数据读到处理器缓存里。 这一步确保了其他线程获得的声明了volatile变量都是从主内存中获取最新的。</p>
+<p>引用自别人的博客：<a href="https://blog.csdn.net/it_dx/article/details/70045286" target="_blank" rel="noopener">https://blog.csdn.net/it_dx/article/details/70045286</a></p>
+</blockquote>
+<hr>
+<h3 id="不保证原子性"><a href="#不保证原子性" class="headerlink" title="不保证原子性"></a>不保证原子性</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> suanfa;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">VolatileTest</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">volatile</span> <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    <span class="keyword">for</span>(<span class="keyword">int</span> j=<span class="number">0</span>;j&lt;<span class="number">100</span>;j++)&#123;</span><br><span class="line">                        count++;<span class="comment">//每个线程执行加100</span></span><br><span class="line">                    &#125;</span><br><span class="line">                    System.out.print(count+<span class="string">" "</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;).start();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="comment">//    运行结果</span></span><br><span class="line"><span class="comment">//    200 400 500 300 200 600 700 800 900 1000</span></span><br><span class="line"><span class="comment">//    100 200 384 500 400 600 700 800 900 1000</span></span><br><span class="line"><span class="comment">//    200 200 300 400 578 578 678 778 878 978 </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>分析</strong></p>
+<p>之前曾经说过，count++这个操作不符合原子性，就是说会有三个步骤 1. 读取count变量的值 、2.对值进行+1 、 3. 赋值给工作内存，然后刷新到内存中。</p>
+<p>这里说下可见性的本质（个人理解）：</p>
+<ol>
+<li><p>线程准备读取自己工作内存的变量的时候，如果其他线程让主存发生了刷新，那么读取工作空间的变量会失效。</p>
+</li>
+<li><p>如果线程1在自己的工作内存没有失效之前已经读取了，线程2让内存的值发生了变化，线程1只用自己成功读取到的值！！</p>
+</li>
+</ol>
+<p>在某一时刻count的值是10，线程1和线程2同时去读取count的值，存放在自己的工作内存，由可见性的本质的第2点可知，假如线程2完成更新操作，让内存的值完成了更新变为了11，可是线程1因为早就读取了值，不会受到影响，所以自己就是操作10，最后更新到内存值还是11，两次++,但是值是11。</p>
+<p>说明了volatile并不保证原子性！</p>
+<p><strong>解决办法</strong></p>
+<ol>
+<li>通过Synchronized和Lock加锁，实现原子性。</li>
+<li>CAS操作，可以去了解AtomInterger的源码就知道CAS是怎么操作的了</li>
+</ol>
+<p><strong>参考链接</strong></p>
+<hr>
+<h3 id="保证有序性"><a href="#保证有序性" class="headerlink" title="保证有序性"></a>保证有序性</h3><p>前面说过volatile不会让指令重排序，所以volatile能在一定程度上保证有序性。</p>
+<p>两点去了解有序性</p>
+<ol>
+<li>当程序执行到volatile变量的读操作或者写操作时，在其前面的操作的更改肯定全部已经进行，且结果已经对后面的操作可见；在其后面的操作肯定还没有进行；</li>
+<li>在进行指令优化时，不能将在对volatile变量的读操作或者写操作的语句放其前面语句的后面执行，也不能把volatile变量后面的语句放到其前面执行。</li>
+</ol>
+<p>通过代码实例来看</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//x、y为非volatile变量</span></span><br><span class="line"><span class="comment">//flag为volatile变量</span></span><br><span class="line"></span><br><span class="line">x = <span class="number">2</span>;        <span class="comment">//语句1</span></span><br><span class="line">y = <span class="number">0</span>;        <span class="comment">//语句2</span></span><br><span class="line">flag = <span class="keyword">true</span>;  <span class="comment">//语句3</span></span><br><span class="line">x = <span class="number">4</span>;         <span class="comment">//语句4</span></span><br><span class="line">y = -<span class="number">1</span>;       <span class="comment">//语句5</span></span><br></pre></td></tr></table></figure>
+<p>如果执行语句3，那么语句1和2肯定已经执行了，但是由于指令重排序（非volatile关键字），1和2谁先执行并不知道。</p>
+<p>而且语句3执行之后的效果，对后面的语句4和5是可见的，4和5的顺序也是不一定的，虽然这里没什么可见的。</p>
+<p>语句4和5，语句1和2各自也没什么数据依赖上的关系，但是由于flag是volatile，所以重排序的时候4和5不能在flag前执行，1和2也不能在flag后执行。</p>
+<p>前面的例子</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//线程1:</span></span><br><span class="line">context = loadContext();   <span class="comment">//语句1</span></span><br><span class="line">inited = <span class="keyword">true</span>;             <span class="comment">//语句2</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//线程2:</span></span><br><span class="line"><span class="keyword">while</span>(!inited )&#123;</span><br><span class="line">  sleep()</span><br><span class="line">&#125;</span><br><span class="line">doSomethingwithconfig(context);</span><br></pre></td></tr></table></figure>
+<p>如果inited加了volatile关键字那么就可以保证不会出错了。</p>
+<p>由于有序性，那么inited = true如果执行了，那么前面的context肯定已经初始化了，所以线程2执行就不会出现context没有初始化的情况了！</p>
+<p><strong>原理</strong></p>
+<blockquote>
+<p>Lock前缀指令实际上相当于一个内存屏障（也成内存栅栏），它确保指令重排序时不会把其后面的指令排到内存屏障之前的位置，也不会把前面的指令排到内存屏障的后面；即在执行到内存屏障这句指令时，在它前面的操作已经全部完成。</p>
+<p>引用自别人的博客：&lt;<a href="https://blog.csdn.net/it_dx/article/details/70045286" target="_blank" rel="noopener">https://blog.csdn.net/it_dx/article/details/70045286</a></p>
+</blockquote>
+<hr>
+<h2 id="应用"><a href="#应用" class="headerlink" title="应用"></a>应用</h2><p>Synchronizedvolatile关键字在某些情况下性能要优于synchronized，但是要注意volatile关键字是无法替代synchronized关键字的，因为volatile关键字无法保证操作的原子性。通常来说，使用volatile必须具备以下2个条件</p>
+<ol>
+<li>对变量的写操作不依赖于当前值</li>
+<li>该变量没有包含在具有其他变量的不变式中</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Singleton</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">static</span> Singleton instance = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">Singleton</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Singleton <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(instance==<span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (Singleton.class) &#123;</span><br><span class="line">                <span class="keyword">if</span>(instance==<span class="keyword">null</span>)</span><br><span class="line">                    instance = <span class="keyword">new</span> Singleton();<span class="comment">//语句1</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>语句1包括以下3个操作，并不符合原子性（没有加Synchronized的情况下）</p>
+<ol>
+<li>给 instance 分配内存</li>
+<li>调用 Singleton 的构造函数来初始化成员变量</li>
+<li>将instance对象指向分配的内存空间（执行完这步 instance 就为非 null ）</li>
+</ol>
+<p>（以下说的是不加Synchronized的情况）</p>
+<p>如果不给instance加volatile关键字，那么由于指令重排序的优化，步骤3可能先于步骤2执行，所以当当前线程执行步骤3的时候，其他线程也用了instance资源，这时由于instance不为空，那么直接返回instance，那么就出错了。</p>
+<p>如果添加了Synchronized和volatile,也就是源码那样，就可以很好避免上面说的问题了！</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ol>
+<li>对Java的内存模型有了深刻的印象</li>
+<li>加深了volatile和Synchronized和CAS的印象，以及其中的区别</li>
+</ol>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
+<li><a href="https://blog.csdn.net/it_dx/article/details/70045286" target="_blank" rel="noopener">https://blog.csdn.net/it_dx/article/details/70045286</a></li>
+<li><a href="https://blog.csdn.net/strivenoend/article/details/80440884" target="_blank" rel="noopener">https://blog.csdn.net/strivenoend/article/details/80440884</a></li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/基础，Java/" rel="tag"># 基础，Java</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/04/07/AQS/" rel="next" title="一篇文章了解AQS和应用">
+                <i class="fa fa-chevron-left"></i> 一篇文章了解AQS和应用
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/head.JPG" alt="JieMing小铭">
+            
+              <p class="site-author-name" itemprop="name">JieMing小铭</p>
+              <p class="site-description motion-element" itemprop="description">记录学习的过程，加深印象！</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">7</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#前提"><span class="nav-number">1.</span> <span class="nav-text">前提</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Java内存模型"><span class="nav-number">2.</span> <span class="nav-text">Java内存模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#内容"><span class="nav-number">2.1.</span> <span class="nav-text">内容</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多线程带来的脏读问题"><span class="nav-number">2.2.</span> <span class="nav-text">多线程带来的脏读问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#并发编程特性"><span class="nav-number">3.</span> <span class="nav-text">并发编程特性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#原子性"><span class="nav-number">3.1.</span> <span class="nav-text">原子性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#内容-1"><span class="nav-number">3.1.1.</span> <span class="nav-text">内容</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Java的原子性"><span class="nav-number">3.1.2.</span> <span class="nav-text">Java的原子性</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#有序性"><span class="nav-number">3.2.</span> <span class="nav-text">有序性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#内容-2"><span class="nav-number">3.2.1.</span> <span class="nav-text">内容</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#实例"><span class="nav-number">3.2.2.</span> <span class="nav-text">实例</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#单线程"><span class="nav-number">3.2.2.1.</span> <span class="nav-text">单线程</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#多线程"><span class="nav-number">3.2.2.2.</span> <span class="nav-text">多线程</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Java的有序性"><span class="nav-number">3.2.3.</span> <span class="nav-text">Java的有序性</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#理解volatile关键字"><span class="nav-number">4.</span> <span class="nav-text">理解volatile关键字</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#保证可见性"><span class="nav-number">4.1.</span> <span class="nav-text">保证可见性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#不保证原子性"><span class="nav-number">4.2.</span> <span class="nav-text">不保证原子性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#保证有序性"><span class="nav-number">4.3.</span> <span class="nav-text">保证有序性</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#应用"><span class="nav-number">5.</span> <span class="nav-text">应用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">6.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">7.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JieMing小铭</span>
+
+  
+</div>
+
+
+  <div class="powered-by"></div>
+
+
+
+  <span class="post-meta-divider"></span>
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
