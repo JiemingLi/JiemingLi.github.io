@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="多线程，底层,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="前言  第一篇文章通过ReentranctLock的公平锁介绍了AQS的核心部分，第二篇文章通过Condition分析了独占锁是的具体的工作机制，还有公平锁和非公平锁的区别，也分析了中断机制在AQS的实现 本篇文章主要了解的是AQS的共享模式，有些内容需要前面两篇文章的内容，所以阅读之前可以先阅读之前的文章，这样效果更佳！ 文章链接:&amp;lt;初步了解什么是AQS(一)&amp;gt;，&amp;lt;初步了解什么">
+<meta name="keywords" content="多线程，底层">
+<meta property="og:type" content="article">
+<meta property="og:title" content="AQS-3">
+<meta property="og:url" content="http://yoursite.com/2019/05/03/AQS-3/index.html">
+<meta property="og:site_name" content="小铭同学的博客">
+<meta property="og:description" content="前言  第一篇文章通过ReentranctLock的公平锁介绍了AQS的核心部分，第二篇文章通过Condition分析了独占锁是的具体的工作机制，还有公平锁和非公平锁的区别，也分析了中断机制在AQS的实现 本篇文章主要了解的是AQS的共享模式，有些内容需要前面两篇文章的内容，所以阅读之前可以先阅读之前的文章，这样效果更佳！ 文章链接:&amp;lt;初步了解什么是AQS(一)&amp;gt;，&amp;lt;初步了解什么">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2nfl6svw3j33uw2kl7wl.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Yly1g2luluuozaj309801uweb.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Yly1g2lviujer2j313i0ec75d.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Yly1g2lvne0etcj313m0ekwfk.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Yly1g2lvqbqy8jj313c0eg75g.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Yly1g2mxdxrujgj30y915vgo9.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2n17sp9mbj30o60dkq36.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2n1e39ybyj308a09cjrb.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2n1optuaej30bu08j0sp.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2n2berx0yj30bx08zweh.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2n2dijuwcj306f08ngli.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2n354qtbij30m0092glq.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2n3l0t0qzj316g0wmdne.jpg">
+<meta property="og:updated_time" content="2019-05-02T16:34:28.348Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="AQS-3">
+<meta name="twitter:description" content="前言  第一篇文章通过ReentranctLock的公平锁介绍了AQS的核心部分，第二篇文章通过Condition分析了独占锁是的具体的工作机制，还有公平锁和非公平锁的区别，也分析了中断机制在AQS的实现 本篇文章主要了解的是AQS的共享模式，有些内容需要前面两篇文章的内容，所以阅读之前可以先阅读之前的文章，这样效果更佳！ 文章链接:&amp;lt;初步了解什么是AQS(一)&amp;gt;，&amp;lt;初步了解什么">
+<meta name="twitter:image" content="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2nfl6svw3j33uw2kl7wl.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"right","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/05/03/AQS-3/">
+
+
+
+
+
+  <title>AQS-3 | 小铭同学的博客</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">小铭同学的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-something">
+          <a href="/something/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br>
+            
+            something
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/03/AQS-3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="JieMing小铭">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/head.JPG">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="小铭同学的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">AQS-3</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-03T00:31:12+08:00">
+                2019-05-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java基础/" itemprop="url" rel="index">
+                    <span itemprop="name">Java基础</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p><img src="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2nfl6svw3j33uw2kl7wl.jpg" alt></p>
+<ol>
+<li>第一篇文章通过ReentranctLock的公平锁介绍了AQS的核心部分，第二篇文章通过Condition分析了独占锁是的具体的工作机制，还有公平锁和非公平锁的区别，也分析了中断机制在AQS的实现</li>
+<li>本篇文章主要了解的是AQS的共享模式，有些内容需要前面两篇文章的内容，所以阅读之前可以先阅读之前的文章，这样效果更佳！</li>
+<li>文章链接:<a href="https://juejin.im/post/5ca9cecce51d452b11625262" target="_blank" rel="noopener">&lt;初步了解什么是AQS(一)&gt;</a>，<a href="https://juejin.im/post/5cc56785f265da037c7cee4e" target="_blank" rel="noopener">&lt;初步了解什么是AQS(二)&gt;</a></li>
+<li>本文章仅供个人学习用，希望大家可以互帮互助！</li>
+</ol>
+<h2 id="共享锁和独占锁的区别"><a href="#共享锁和独占锁的区别" class="headerlink" title="共享锁和独占锁的区别"></a>共享锁和独占锁的区别</h2><h3 id="独占锁"><a href="#独占锁" class="headerlink" title="独占锁"></a>独占锁</h3><ol>
+<li>独占的，排他的</li>
+<li>当某个线程拥有独占锁，其他线程只能等待这个线程释放这个独占锁才能去争取，并且同一时刻只能有一个线程可以争取独占锁成功</li>
+</ol>
+<h3 id="共享锁"><a href="#共享锁" class="headerlink" title="共享锁"></a>共享锁</h3><ol>
+<li>锁是共享的，可以被<strong>多个线程</strong>同时拥有</li>
+<li>如果一个线程拥有了这个锁，那么其他等待这个共享锁的线程可以去尝试获取锁，并且有很大几率获取成功</li>
+</ol>
+<h3 id="方法区别"><a href="#方法区别" class="headerlink" title="方法区别"></a>方法区别</h3><table>
+<thead>
+<tr>
+<th>独占锁</th>
+<th>共享锁</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>tryAcquire(int arg)</td>
+<td>tryAcquireShared(int arg)</td>
+</tr>
+<tr>
+<td>tryAcquireNanos(int arg, long nanosTimeout)</td>
+<td>tryAcquireSharedNanos(int arg, long nanosTimeout)</td>
+</tr>
+<tr>
+<td>acquire(int arg)</td>
+<td>acquireShared(int arg)</td>
+</tr>
+<tr>
+<td>acquireQueued(final Node node, int arg)</td>
+<td>doAcquireShared</td>
+</tr>
+<tr>
+<td>acquireInterruptibly(int arg)</td>
+<td>acquireSharedInterruptibly(int arg)</td>
+</tr>
+<tr>
+<td>doAcquireNanos(int arg, long nanosTimeout)</td>
+<td>doAcquireSharedNanos(int arg, long nanosTimeout)</td>
+</tr>
+<tr>
+<td>release(int arg)</td>
+<td>releaseShared(int arg)</td>
+</tr>
+<tr>
+<td>tryRelease(int arg)</td>
+<td>tryReleaseShared(int arg)</td>
+</tr>
+<tr>
+<td>-</td>
+<td>doReleaseShared()</td>
+</tr>
+</tbody>
+</table>
+<p>由表格我们知道，除了最后一个<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">在独占锁中，`release`方法中尝试释放锁，如果成功就`unparkSuccessor(h)`</span><br><span class="line"></span><br><span class="line">在共享锁中，`releaseShared`方法中尝试释放锁，如果成功就`doReleaseShared()`</span><br><span class="line"></span><br><span class="line">所以一般来说`unparkSuccessor(h)`和`doReleaseShared()`一般是互相对应的，但是`doReleaseShare()`要执行的逻辑比前者多。这点我们到后面再看！</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">这里提一下：</span><br><span class="line"></span><br><span class="line">我们之前说过</span><br><span class="line"></span><br><span class="line">- 在独占模式中，当一个线程获取锁之后，只有释放锁之后才会去唤醒下一个线程。</span><br><span class="line"></span><br><span class="line">- 在共享模式中，如果一个线程成功获取了共享锁，他就会马上唤醒下一个等待的线程，并不需要该拥有锁的线程释放锁才唤醒下一个线程，因为共享锁的设定就是为了让多个线程同时拥有所资源的！**这里有两种情况会唤醒后面等待的线程 1. 当前线程成功拥有锁 ， 2. 拥有锁的线程释放锁 .**  希望读者记住这两点，这对于后面我们分析源码的时候有指导性的作用。 </span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">&gt; 前面我们先说了独占锁和共享锁的区别，是为了让读者更好地去区分它们。下面我们就通过分析CountDownLatch的源码，去体会AQS中共享模式是如何工作的。</span><br><span class="line"></span><br><span class="line">## CountDownLatch</span><br><span class="line"></span><br><span class="line">### 说明</span><br><span class="line"></span><br><span class="line">CountDownLatch类是典型的AQS的**共享模式**使用，并且是一个高频使用的类。</span><br><span class="line"></span><br><span class="line">关于CountDownLatch的用法，我们就不一一在这里赘述。如果有不了解的读者，可以先去百度一下再往下看源码分析，这样效果会更佳。</span><br><span class="line"></span><br><span class="line">&gt; 这里推荐一篇关于怎么用的博客，个人看的时候觉得比较通俗易懂</span><br><span class="line">&gt;</span><br><span class="line">&gt; &lt;https://www.cnblogs.com/cuglkb/p/8572239.html&gt;</span><br><span class="line"></span><br><span class="line">------------------------------------</span><br><span class="line"></span><br><span class="line">### 源码分析</span><br><span class="line"></span><br><span class="line">#### 构造方法</span><br><span class="line"></span><br><span class="line">需要传入一个不小于0的数，其实也就是设置AQS的共享资源</span><br><span class="line"></span><br><span class="line">```java</span><br><span class="line">  public CountDownLatch(int count) &#123;</span><br><span class="line">        if (count &lt; 0) throw new IllegalArgumentException(&quot;count &lt; 0&quot;);</span><br><span class="line">        this.sync = new Sync(count);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">//----------Sync是CountDownLatch的内部类</span><br><span class="line">/**</span><br><span class="line">我们这里说一下，我们看到Sync就是继承了AQS这个抽象类，然后重写了tryAcquireShared和</span><br><span class="line">tryReleaseShared的方法，也就是自己加了个getCount()方法，所以后面看到Sync类调用的方法，除了重写那两个，其他的基本都是父类的方法，读者要时刻记住这一点！</span><br><span class="line">**/</span><br><span class="line">  private static final class Sync extends AbstractQueuedSynchronizer &#123;</span><br><span class="line">        private static final long serialVersionUID = 4982264981922014374L;</span><br><span class="line"></span><br><span class="line">        Sync(int count) &#123;</span><br><span class="line">            setState(count); //AQS</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        int getCount() &#123;</span><br><span class="line">            return getState();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">      	//重写AQS的方法</span><br><span class="line">        protected int tryAcquireShared(int acquires) &#123;</span><br><span class="line">            return (getState() == 0) ? 1 : -1;</span><br><span class="line">        &#125;</span><br><span class="line">		//重写AQS的方法</span><br><span class="line">        protected boolean tryReleaseShared(int releases) &#123;</span><br><span class="line">            // Decrement count; signal when transition to zero</span><br><span class="line">            for (;;) &#123;</span><br><span class="line">                int c = getState();</span><br><span class="line">                if (c == 0)</span><br><span class="line">                    return false;</span><br><span class="line">                int nextc = c-1;</span><br><span class="line">                if (compareAndSetState(c, nextc))</span><br><span class="line">                    return nextc == 0;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></p>
+<p>我们可以看到，在构造方法里面我们就设置了AQS的state值。</p>
+<p>所有调用了<code>await()</code>方法的线程就会等待挂起，然后另外的线程就会执行state = state -1 的操作。</p>
+<p>当state的值为0的时候，那么将state减为0的线程就会马上唤醒之前调用了<code>await()</code>的线程，然后这些线程就会去获取共享锁啦！</p>
+<p>在我们知道CountDownLatch的用法之后，我们需要注意它的两个方法，一个是<code>CountDown()</code>,另外一个是<code>await()</code>方法</p>
+<p><code>countDown()</code>每次会把state的值减1，直到state的值变为0，唤醒调用<code>await()</code>的线程</p>
+<p><code>await()</code>顾名思义，调用这个方法的线程会阻塞，直到被唤醒。</p>
+<blockquote>
+<p>上面说的希望读者可以认真理解一下，理解到位了看下面的源码才不会半知半懂</p>
+</blockquote>
+<h4 id="示例代码"><a href="#示例代码" class="headerlink" title="示例代码"></a>示例代码</h4><p>我们通过下面的源码，来分析<code>countDown</code>和<code>await</code>的源码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">       CountDownLatch latch = <span class="keyword">new</span> CountDownLatch(<span class="number">2</span>);</span><br><span class="line">    <span class="comment">//t1和t2负责countDown，也就是将state减1</span></span><br><span class="line">       Thread t1 = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">           <span class="meta">@Override</span></span><br><span class="line">           <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">               <span class="keyword">try</span> &#123;</span><br><span class="line">                   Thread.sleep(<span class="number">5000</span>);</span><br><span class="line">               &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                   e.printStackTrace();</span><br><span class="line">               &#125;</span><br><span class="line">               latch.countDown();</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;,<span class="string">"t1"</span>);</span><br><span class="line"></span><br><span class="line">       Thread t2 = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">           <span class="meta">@Override</span></span><br><span class="line">           <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">               <span class="keyword">try</span> &#123;</span><br><span class="line">                   Thread.sleep(<span class="number">7000</span>);</span><br><span class="line"></span><br><span class="line">               &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                   e.printStackTrace();</span><br><span class="line">               &#125;</span><br><span class="line">               latch.countDown();</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;,<span class="string">"t2"</span>);</span><br><span class="line"></span><br><span class="line">        t1.start();</span><br><span class="line">        t2.start();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// t3 和 t4负责await，等待state为0然后被唤醒</span></span><br><span class="line">        Thread t3 = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    latch.await();</span><br><span class="line">                    System.out.println(Thread.currentThread().getName() + <span class="string">"从await回来了"</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,<span class="string">"t3"</span>);</span><br><span class="line"></span><br><span class="line">        Thread t4 = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    latch.await();</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">                System.out.println(Thread.currentThread().getName() + <span class="string">"从await回来了"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,<span class="string">"t4"</span>);</span><br><span class="line"></span><br><span class="line">        t3.start();</span><br><span class="line">        t4.start();</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>结果（t3和t4不是按照绝对的顺序输出的，后面的分析我们按照t3先入队）</p>
+<p><img src="http://ww1.sinaimg.cn/large/006ozI4Yly1g2luluuozaj309801uweb.jpg" alt></p>
+<hr>
+<blockquote>
+<p>下面我们就按照步骤来</p>
+<p>latch先await()阻塞，等待被唤醒(等待state变为0)，然后await()返回去做其他事情！</p>
+</blockquote>
+<h4 id="await源码"><a href="#await源码" class="headerlink" title="await源码"></a>await源码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">await</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">     	<span class="comment">//调用sync的方法，关于Sync我们前面已经说过，这里就不多赘述了</span></span><br><span class="line">        sync.acquireSharedInterruptibly(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">acquireSharedInterruptibly</span><span class="params">(<span class="keyword">int</span> arg)</span> <span class="comment">//AQS</span></span></span><br><span class="line"><span class="function">            <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">    	<span class="comment">//这个方法是响应中断的有中断就抛出异常呗</span></span><br><span class="line">        <span class="keyword">if</span> (Thread.interrupted())</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> InterruptedException();</span><br><span class="line">    	<span class="comment">//t3和t4到这里的时候，肯定是小于0的(此时state = 2)</span></span><br><span class="line">    	<span class="comment">//所以先看看tryAcquireShared方法</span></span><br><span class="line">    	<span class="keyword">if</span> (tryAcquireShared(arg) &lt; <span class="number">0</span>)</span><br><span class="line">            doAcquireSharedInterruptibly(arg);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">int</span> <span class="title">tryAcquireShared</span><span class="params">(<span class="keyword">int</span> acquires)</span> </span>&#123; <span class="comment">//重写AQS的方法</span></span><br><span class="line">        <span class="comment">//只有state&gt;0的时候才会返回1</span></span><br><span class="line">    	<span class="keyword">return</span> (getState() == <span class="number">0</span>) ? <span class="number">1</span> : -<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//从这个方法名我们知道，这个方法是获取共享锁并且是响应中断的</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doAcquireSharedInterruptibly</span><span class="params">(<span class="keyword">int</span> arg)</span> <span class="comment">//AQS</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">    </span><br><span class="line">    	<span class="comment">//步骤1. 将当前节点设置为共享模式，然后加入阻塞队列！</span></span><br><span class="line">    	<span class="comment">//关于这些知识，在第一篇和第二篇文章就说过啦，不懂的回去看看吧！</span></span><br><span class="line">        <span class="keyword">final</span> Node node = addWaiter(Node.SHARED);</span><br><span class="line">        <span class="keyword">boolean</span> failed = <span class="keyword">true</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">                <span class="keyword">final</span> Node p = node.predecessor();</span><br><span class="line">                <span class="keyword">if</span> (p == head) &#123;</span><br><span class="line">                    <span class="comment">//这样也是一样，只要state &gt; 0，就返回-1,（此时state = 2)</span></span><br><span class="line">                    <span class="keyword">int</span> r = tryAcquireShared(arg);</span><br><span class="line">                    <span class="keyword">if</span> (r &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">                        setHeadAndPropagate(node, r);</span><br><span class="line">                        p.next = <span class="keyword">null</span>; <span class="comment">// help GC</span></span><br><span class="line">                        failed = <span class="keyword">false</span>;</span><br><span class="line">                        <span class="keyword">return</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//步骤2. 因为是刚开始，所以不会进到前面那个if语句，所以会直接来到这</span></span><br><span class="line">                <span class="comment">//这里我们都很熟悉了，就是在阻塞队列找到一个地方让这个线程可以挂起！</span></span><br><span class="line">                <span class="keyword">if</span> (shouldParkAfterFailedAcquire(p, node) &amp;&amp;</span><br><span class="line">                    parkAndCheckInterrupt())</span><br><span class="line">                    <span class="keyword">throw</span> <span class="keyword">new</span> InterruptedException();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (failed)</span><br><span class="line">                cancelAcquire(node);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>我们把上面的步骤用图来描述一下大家就清楚啦！</p>
+<p>t3经过步骤1之后，也就是入队之后，会变成如下图所示</p>
+<p><img src="http://ww1.sinaimg.cn/large/006ozI4Yly1g2lviujer2j313i0ec75d.jpg" alt></p>
+<p>然后<code>tryAcquiredShared</code>会返回-1，那么就执行<code>shouldParkAfterFailedAcquire</code>就会将t3的pre指向的节点的WaitStatus(下面统称为ws)置为-1，如下图所示。(t3的ws为-1)</p>
+<p><img src="http://ww1.sinaimg.cn/large/006ozI4Yly1g2lvne0etcj313m0ekwfk.jpg" alt></p>
+<p>执行完<code>shouldParkAfterFailedAcquire</code>之后执行<code>parkAndCheckInterrupt</code>就会把t3挂起啦！</p>
+<p>然后后面t4进来的时候和t3是一样的步骤，到后面就是t4加入阻塞队列，然后把t3的ws置为-1，结果如下图所示。(t4的ws为-1)</p>
+<p><img src="http://ww1.sinaimg.cn/large/006ozI4Yly1g2lvqbqy8jj313c0eg75g.jpg" alt></p>
+<p>接着，t4就就被挂起啦，现在t3和t4就已经全挂起了，就等待着被唤醒啦！</p>
+<hr>
+<p>这里说明一下，因为可以是由多个线程调用<code>countDown</code>的，那么有些线程调用的时候state还不是0，所以这些线程不会唤醒<code>await</code>的线程，只有当某个线程调用了<code>countDown</code>方法，然后state从1变为0了，那么这个线程就唤醒其他<code>await</code>的线程！明白这点很重要。</p>
+<p>接下来我们继续看<code>countDown</code>方法</p>
+<h4 id="countDown源码"><a href="#countDown源码" class="headerlink" title="countDown源码"></a>countDown源码</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">countDown</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        sync.releaseShared(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">boolean</span> <span class="title">releaseShared</span><span class="params">(<span class="keyword">int</span> arg)</span> </span>&#123; <span class="comment">// AQS</span></span><br><span class="line">    	<span class="comment">//只有将state设置为0的时候才会返回true，否则只是每次将state-1而已</span></span><br><span class="line">        <span class="keyword">if</span> (tryReleaseShared(arg)) &#123;</span><br><span class="line">            <span class="comment">//到这里说明已经成功把state置为0了，那么就开始唤醒现在还在等待的线程啦！</span></span><br><span class="line">            doReleaseShared();</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    	<span class="comment">//state本来就是0的话，肯定释放不了，就返回false啦</span></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">boolean</span> <span class="title">tryReleaseShared</span><span class="params">(<span class="keyword">int</span> releases)</span> </span>&#123;<span class="comment">// 重写AQS</span></span><br><span class="line">            <span class="comment">// Decrement count; signal when transition to zero</span></span><br><span class="line">            <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">                <span class="keyword">int</span> c = getState();</span><br><span class="line">                <span class="keyword">if</span> (c == <span class="number">0</span>) </span><br><span class="line">                    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">                <span class="keyword">int</span> nextc = c-<span class="number">1</span>;</span><br><span class="line">                <span class="comment">//每次都是CAS将state-1</span></span><br><span class="line">                <span class="keyword">if</span> (compareAndSetState(c, nextc))</span><br><span class="line">                    <span class="comment">//如果state减1成功变为0的话，肯定就返回true啦！</span></span><br><span class="line">                    <span class="keyword">return</span> nextc == <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure>
+<p>下面我们来着重分析下<code>doReleaseShared()</code>这个方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//此时state为0，先把流程走一遍先，先看注释即可,其他先不看</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doReleaseShared</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">            Node h = head;</span><br><span class="line">            <span class="keyword">if</span> (h != <span class="keyword">null</span> &amp;&amp; h != tail) &#123;</span><br><span class="line">                <span class="keyword">int</span> ws = h.waitStatus;</span><br><span class="line">                <span class="comment">//t3入队的时候，已经把head节点设置为-1啦，所以会到if语句里面</span></span><br><span class="line">                <span class="keyword">if</span> (ws == Node.SIGNAL) &#123;</span><br><span class="line">                    <span class="comment">//将head设置为0，也就是恢复到初始状态</span></span><br><span class="line">                    <span class="keyword">if</span> (!compareAndSetWaitStatus(h, Node.SIGNAL, <span class="number">0</span>))</span><br><span class="line">                        <span class="keyword">continue</span>;            <span class="comment">// loop to recheck cases</span></span><br><span class="line">                    <span class="comment">//到这里就是唤醒head节点的下一个节点，这时候也就是唤醒t3</span></span><br><span class="line">                    unparkSuccessor(h);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span> <span class="keyword">if</span> (ws == <span class="number">0</span> &amp;&amp;</span><br><span class="line">                         !compareAndSetWaitStatus(h, <span class="number">0</span>, Node.PROPAGATE))</span><br><span class="line">                    <span class="keyword">continue</span>;                <span class="comment">// loop on failed CAS</span></span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (h == head)                   <span class="comment">// loop if head changed</span></span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>在t3被唤醒之后，我们回到t3被唤醒的地方和接下来要做的事情</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doAcquireSharedInterruptibly</span><span class="params">(<span class="keyword">int</span> arg)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> Node node = addWaiter(Node.SHARED);</span><br><span class="line">        <span class="keyword">boolean</span> failed = <span class="keyword">true</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">                <span class="keyword">final</span> Node p = node.predecessor();</span><br><span class="line">                <span class="keyword">if</span> (p == head) &#123;<span class="comment">//此时head就是t3的前缀啦，所以可以进来这里</span></span><br><span class="line">                    <span class="keyword">int</span> r = tryAcquireShared(arg);</span><br><span class="line">                    <span class="comment">//这里r &gt; 0啦，因为之前说过state == 0的时候才会返回1</span></span><br><span class="line">                    <span class="keyword">if</span> (r &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">                        <span class="comment">//那么此时t3就走到这一步了，下面我们看下这个方法</span></span><br><span class="line">                        setHeadAndPropagate(node, r);</span><br><span class="line">                        p.next = <span class="keyword">null</span>; <span class="comment">// help GC</span></span><br><span class="line">                        failed = <span class="keyword">false</span>;</span><br><span class="line">                        <span class="keyword">return</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//步骤1:t3被唤醒之后就会从这里继续执行啦，假设没有中断的情况，那么是不会进到if语句里面的啦</span></span><br><span class="line">                <span class="keyword">if</span> (shouldParkAfterFailedAcquire(p, node) &amp;&amp;</span><br><span class="line">                    parkAndCheckInterrupt())</span><br><span class="line">                    <span class="keyword">throw</span> <span class="keyword">new</span> InterruptedException();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (failed)</span><br><span class="line">                cancelAcquire(node);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>此时t3会进入setHeadAndPropagate这个方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">setHeadAndPropagate</span><span class="params">(Node node, <span class="keyword">int</span> propagate)</span> </span>&#123;</span><br><span class="line">        Node h = head; <span class="comment">// Record old head for check below</span></span><br><span class="line">        setHead(node); <span class="comment">//步骤1:t3先把自己设置为头结点先</span></span><br><span class="line">        <span class="keyword">if</span> (propagate &gt; <span class="number">0</span> || h == <span class="keyword">null</span> || h.waitStatus &lt; <span class="number">0</span> ||</span><br><span class="line">            (h = head) == <span class="keyword">null</span> || h.waitStatus &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            Node s = node.next;</span><br><span class="line">            <span class="keyword">if</span> (s == <span class="keyword">null</span> || s.isShared())</span><br><span class="line">                <span class="comment">//基本都会执行这个函数，那么这里也就说明在共享模式中，当节点被唤醒</span></span><br><span class="line">                <span class="comment">//的时候都会执行这个函数，也就是会唤醒下一个节点</span></span><br><span class="line">                <span class="comment">//那么这里就是说t3把自己设置为头部之后，就会马上去唤醒t4去抢锁啦！</span></span><br><span class="line">                doReleaseShared(); </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>那么在这里，我们就好好分析一下<code>doReleaseShared()</code>这个方法了，所以在这里我们知道，t3已经是head节点了</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//调用这个方法的时候我们已经知道此事state为0了</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doReleaseShared</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">            Node h = head;</span><br><span class="line">            <span class="comment">/**</span></span><br><span class="line"><span class="comment">            h == null 说明阻塞队列已经为空</span></span><br><span class="line"><span class="comment">            h == tail 说明阻塞队列刚被初始化的头结点</span></span><br><span class="line"><span class="comment">            </span></span><br><span class="line"><span class="comment">            还有一种情况就是</span></span><br><span class="line"><span class="comment">            之前是普通的节点，但是此节点已经是头结点，那么就是说该节点是已经被唤醒了，			 后面阻塞队列已经没有节点了</span></span><br><span class="line"><span class="comment">            所以上面两种情况都不需要被唤醒</span></span><br><span class="line"><span class="comment">            */</span></span><br><span class="line">            <span class="keyword">if</span> (h != <span class="keyword">null</span> &amp;&amp; h != tail) &#123;</span><br><span class="line">                <span class="keyword">int</span> ws = h.waitStatus;</span><br><span class="line">                <span class="comment">//ws == -1,因为之前t4已经把t3设置为-1(SIGNAL)啦</span></span><br><span class="line">                <span class="keyword">if</span> (ws == Node.SIGNAL) &#123;</span><br><span class="line">                    <span class="comment">//问题1:这里如果将节点设置为初始化状态失败的原因待会解释！</span></span><br><span class="line">                    <span class="keyword">if</span> (!compareAndSetWaitStatus(h, Node.SIGNAL, <span class="number">0</span>))</span><br><span class="line">                        <span class="keyword">continue</span>;            <span class="comment">// loop to recheck cases</span></span><br><span class="line">                    <span class="comment">//到达这里，就说明t3的ws已经设置为0，然后t3就去唤醒t4啦！</span></span><br><span class="line">                    <span class="comment">//那么t4接下来被唤醒，就像t3被唤醒后做的事情差不多是一模一样，</span></span><br><span class="line">                    <span class="comment">//所以想分析t4接下来要干什么，看上面t3被唤醒之后做了什么就好了</span></span><br><span class="line">                    unparkSuccessor(h);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span> <span class="keyword">if</span> (ws == <span class="number">0</span> &amp;&amp;</span><br><span class="line">                         !compareAndSetWaitStatus(h, <span class="number">0</span>, Node.PROPAGATE))</span><br><span class="line">                   	<span class="comment">//问题2：</span></span><br><span class="line">                    <span class="comment">//在我们举的例子中，t3是肯定不会来到这里的，这里主要判断的是</span></span><br><span class="line">                    <span class="comment">//如果有节点加入进来，但是这个节点准备到这里的时候把它的前驱节点</span></span><br><span class="line">                    <span class="comment">//就设置为-1了，关于这里，我们下面说明解释。</span></span><br><span class="line">                    <span class="keyword">continue</span>;                <span class="comment">// loop on failed CAS</span></span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//此时h指向的还是t3那个节点，但是head节点可能已经变了</span></span><br><span class="line">            <span class="comment">//如果是同一个节点，退出循环，让被唤醒的线程去唤醒后面的线程。</span></span><br><span class="line">            <span class="keyword">if</span> (h == head)                   <span class="comment">// loop if head changed</span></span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>下面我们来看一张图，就可以解释注释的内容了(希望大家可以好好看看这张图，方便理解后面的解释)</p>
+<p><img src="http://ww1.sinaimg.cn/large/006ozI4Yly1g2mxdxrujgj30y915vgo9.jpg" alt></p>
+<p>接着我们来解释一些内容</p>
+<p><strong>问题1</strong>：</p>
+<p>就是第一个CAS为什么会失败的，我们看到’<strong>唤醒cur的next节点</strong>‘的流程，比如说t3唤醒t4之后，t3和t4此时就同时进行执行各自的代码了(这里我们把t3和cur对应，t4和next对应)，所以在next被唤醒之后，就会把next节点设置为head节点，我们之前也说过，在<code>setHeadAndPropagate</code>里面有<code>doReleased</code>方法，所以会有下面的情况</p>
+<ul>
+<li><p>cur节点唤醒next节点之后，cur由于某种原因阻塞了，next节点成功把自己设置为head节点，执行后面的操作，但是还没到第一个CAS.此时cur又继续往下走，判断此时的h已经不是执行head节点了，那么就会指向新的head，也就是此时的next节点.然后cur也继续往下走.所以现在cur和next这两个节点都是同时执行<code>doReleased</code>方法的，所以也会有可能同时到达第一个CAS,所以此时肯定只有一个线程CAS操作成功啦，另外一个不成功的就根据情况往下走了！这里举几个例子。</p>
+<p>比如说有t3-&gt;t4-&gt;t5-&gt;t6&gt;……tn</p>
+<p>(1)把t3和t4分别对应前面说的那个cur和next，那么此时假设是t3唤醒t5，但t5还没有把自己设置为head节点，那么head节点仍然t4。又因为t4之前CAS是失败的，所以会自旋一次，然后执行最后一个if语句的时候，会直接退出啦！t3执行最后一个if的时候，由于t5还没有把自己设置为head，所以此时t3也退出啦。那么就说明t5以后的节点没人唤醒了吗？非也，因为t5成功设置自己为头结点的话，也会执行<code>doReleased()</code>方法啦！就由t5和它的后继去唤醒吧！</p>
+</li>
+</ul>
+<p>  在(1)的中，如果t3唤醒t5之后，t5也成功设置自己为头结点了，那么t5此时会可能会唤醒后面的，这里先不考虑。然后t3和t4又指向新的head节点啦。这种情况又开始循环啦。</p>
+<blockquote>
+<p>这里说明一下，t3和t4之中只能有一个CAS成功，另外一个就continue再次自旋啦，所以是t4唤醒t5，那么t3就像(1)说的t4一样啦。</p>
+</blockquote>
+<p>我们看到在，在<code>setHeadAndPropagate</code>里面有<code>doReleased</code>方法，让后面的节点可以更快地唤醒，增大唤醒的吞吐量，不得不说设计者的厉害之处啊！</p>
+<p><strong>问题2</strong>:</p>
+<p>在解释问题2之前，我们通过下面的步骤慢慢分析</p>
+<p>假设这是某一情况阻塞队列的情况</p>
+<p><img src="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2n17sp9mbj30o60dkq36.jpg" alt></p>
+<ol>
+<li>然后t3被唤醒之后，此时阻塞队列可能没有节点了(阻塞队列不包含head节点)</li>
+</ol>
+<p><img src="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2n1e39ybyj308a09cjrb.jpg" alt></p>
+<ol start="2">
+<li>我们在流程图里面说过，可能之前<code>await</code>的节点可能在<code>addWaiter</code>之前阻塞了，这时候可能又不阻塞了，然后执行了<code>addWaiter方法</code>，但是没有执行<code>shouldParkAfterFailedAcquire</code>，也就是t3没有把t2的ws设置为SIGNAL，所以就可能在执行<code>if (h != null &amp;&amp; h != tail)</code>之前会有如下图所示</li>
+</ol>
+<p><img src="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2n1optuaej30bu08j0sp.jpg" alt></p>
+<ol start="3">
+<li><p>在<code>doReleased</code>函数中，我们已经把ws赋值为t3的ws，也就是ws为0，那么在<strong>2</strong>的前提下，我们来到这段代码<code>else if (ws == 0 &amp;&amp;!compareAndSetWaitStatus(h, 0, Node.PROPAGATE))</code>，我们很容易知道，ws为0，那么这次CAS有可能失败，为什么呢？在<strong>2</strong> 我们说过<code>shouldParkAfterFailedAcquire</code>可能还没执行，那么也有可能CAS之前，就已经执行了这个函数，也就是此时t3的ws为-1了，那么此时肯定CAS失败啦！如果失败的话，就让t3再回去检查下状态，看看是否可以唤醒后继节点啦，所以在<code>else if</code>之后就是让它continue啦！</p>
+<p><img src="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2n2berx0yj30bx08zweh.jpg" alt></p>
+</li>
+<li><p>如果CAS成功，那么就是说<code>shouldParkAfterFailedAcquire</code>这个函数还没有执行，所以在执行最后一个if语句的时候t3可能退出啦，那么t4继续执行<code>shouldParkAfterFailedAcquire</code>，CAS把t3设置为-1之后，就去执行到<code>setHeadAndPropagate</code>这个方法，那么也会执行<code>doRelease</code>，t4的使命就结束了！</p>
+<p><img src="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2n2dijuwcj306f08ngli.jpg" alt></p>
+</li>
+</ol>
+<p>经过上面4点的说明，我们对问题2的分析就已经很清楚啦！</p>
+<p><strong>扩展</strong></p>
+<p>在解决问题2的时候，我们如果把<code>else if (ws == 0 &amp;&amp;!compareAndSetWaitStatus(h, 0, Node.PROPAGATE))</code>代码去掉的话，会有什么影响么？分析一下！</p>
+<p>假如没有这段代码，假设此时阻塞队列如下所示</p>
+<p><img src="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2n354qtbij30m0092glq.jpg" alt></p>
+<p>假设这是t1唤醒t2,但t2还不是head节点，那么在t4入队的时候，因为我们假设没有那个<code>else if</code>语句嘛，所以会执行<code>shouldParkAfterFailedAcquire</code>,那么将t2的wsCAS为-1，此时head可能已经指向t2了，前面我们也说过，在共享模式中，只要一个节点成为头结点，就会执行<code>doReleased</code>方法，所以在t2设置为head节点的时候，可能在t4休眠之前就被t2park了，但是这个操作时可以允许的，当我们<code>unpark</code>一个并没有被<code>park</code>的线程时，该线程在下一次调用<code>park</code>方法时就不会被挂起，而这一行为是符合我们的场景的——因为当前的共享锁处于可获取的状态，后继的线程应该直接来获取锁，不应该被挂起。</p>
+<h2 id="CyclicBarrier"><a href="#CyclicBarrier" class="headerlink" title="CyclicBarrier"></a>CyclicBarrier</h2><h3 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h3><blockquote>
+<p>下面我们来说下CyclicBarrier，和CountDownLatch差不多，CyclicBarrier 基于 <strong>Condition</strong> 来实现。所以如果没了解过Condition的话，建议大家看下前一篇文章<a href="https://juejin.im/post/5cc56785f265da037c7cee4e" target="_blank" rel="noopener">初步了解AQS是什么(二)</a></p>
+</blockquote>
+<p>啥都不说，开局一张图，(引用别人大佬画的图)</p>
+<p><img src="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2n3l0t0qzj316g0wmdne.jpg" alt></p>
+<h3 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h3><p>下面我们开始分析咯，依然<code>await</code>是最重要的方法</p>
+<p>我们先看下一些细节</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CyclicBarrier</span> </span>&#123;</span><br><span class="line">    <span class="comment">//CyclicBarrier 是可以重复使用的，每次从开始使用到穿过栅栏当做"一代"，或者"一个周期"</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Generation</span> </span>&#123;</span><br><span class="line">        <span class="keyword">boolean</span> broken = <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** The lock for guarding barrier entry */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ReentrantLock lock = <span class="keyword">new</span> ReentrantLock();</span><br><span class="line">   </span><br><span class="line">    <span class="comment">//这里看出是基于Condition的，所以等待线程的条件就是所有线程都在栅栏上await啦</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Condition trip = lock.newCondition();</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//参与跨过线程的线程数</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> parties;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/* 如果设置这个，那么跨过栅栏之前需要执行的操作*/</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Runnable barrierCommand;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/** 当前所处的代 */</span></span><br><span class="line">    <span class="keyword">private</span> Generation generation = <span class="keyword">new</span> Generation();</span><br></pre></td></tr></table></figure>
+<p>下面我们看看如可开启新的一代吧</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">nextGeneration</span><span class="params">()</span> </span>&#123;</span><br><span class="line">     <span class="comment">// 需要唤醒所有等待在栅栏上的线程</span></span><br><span class="line">     trip.signalAll();</span><br><span class="line">     </span><br><span class="line">     count = parties;</span><br><span class="line">    	<span class="comment">//开启新的一代！</span></span><br><span class="line">     generation = <span class="keyword">new</span> Generation();</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>基本可以看出，我们开启新的一点，差不多和重写生成一个<strong>CyclicBarrier</strong>差不多</p>
+</blockquote>
+<p>我们接下来看下如何打破一个栅栏</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">breakBarrier</span><span class="params">()</span> </span>&#123;</span><br><span class="line">   	<span class="comment">//设置标志位</span></span><br><span class="line">       generation.broken = <span class="keyword">true</span>;</span><br><span class="line">    	<span class="comment">//重新设置count的值</span></span><br><span class="line">       count = parties;</span><br><span class="line">    	<span class="comment">//唤醒所有在等待的线程</span></span><br><span class="line">       trip.signalAll();</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<p>现在已经有了铺垫了，那么我们来看下<code>await</code>方法吧</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">await</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException, BrokenBarrierException </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> dowait(<span class="keyword">false</span>, <span class="number">0L</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (TimeoutException toe) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> Error(toe); <span class="comment">// cannot happen</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">dowait</span><span class="params">(<span class="keyword">boolean</span> timed, <span class="keyword">long</span> nanos)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> InterruptedException, BrokenBarrierException,</span></span><br><span class="line"><span class="function">               TimeoutException </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> ReentrantLock lock = <span class="keyword">this</span>.lock;</span><br><span class="line">        <span class="comment">//这里我们先获得锁呗，在finally后面再释放锁</span></span><br><span class="line">        <span class="comment">//因为在Condition中，await的线程需要先获得锁的啦！</span></span><br><span class="line">        lock.lock();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">final</span> Generation g = generation;</span><br><span class="line">			<span class="comment">//先检查栅栏是否有被打破，被打破就抛出异常呗</span></span><br><span class="line">            <span class="keyword">if</span> (g.broken)</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> BrokenBarrierException();</span><br><span class="line">			<span class="comment">//检查中断，有则抛出</span></span><br><span class="line">            <span class="keyword">if</span> (Thread.interrupted()) &#123;</span><br><span class="line">                breakBarrier();</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> InterruptedException();</span><br><span class="line">            &#125;</span><br><span class="line">			<span class="comment">//index 就是这个返回值</span></span><br><span class="line">            <span class="comment">//index 存储当前还有多少count</span></span><br><span class="line">            <span class="keyword">int</span> index = --count;</span><br><span class="line">            <span class="comment">//如果index 为 0，那么就说明所有线程在栅栏啦，那么就准备打破然后下一代啦</span></span><br><span class="line">            <span class="keyword">if</span> (index == <span class="number">0</span>) &#123;  <span class="comment">// tripped</span></span><br><span class="line">                <span class="comment">//用来标记barrierCommand在执行的时候有没有发生异常</span></span><br><span class="line">                <span class="keyword">boolean</span> ranAction = <span class="keyword">false</span>;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    <span class="keyword">final</span> Runnable command = barrierCommand;</span><br><span class="line">                    <span class="keyword">if</span> (command != <span class="keyword">null</span>)</span><br><span class="line">                        <span class="comment">//执行barrierCommand的操作</span></span><br><span class="line">                        command.run();</span><br><span class="line">                    ranAction = <span class="keyword">true</span>;</span><br><span class="line">                    <span class="comment">//开启下一代啦，这里建议看下源码！</span></span><br><span class="line">                    nextGeneration();</span><br><span class="line">                    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">                &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                    <span class="comment">//如果barrierCommand执行的时候发生过异常，那就打破栅栏呗！</span></span><br><span class="line">                    <span class="comment">//这里也建议看下源码！</span></span><br><span class="line">                    <span class="keyword">if</span> (!ranAction)</span><br><span class="line">                        breakBarrier();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//如果到达这里，说明上面的index不为0，救是说不是最后一个线程到达栅栏的</span></span><br><span class="line">            <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    <span class="comment">//这里是没有超时机制的</span></span><br><span class="line">                    <span class="comment">//到这里也就是说到达栅栏了，那么就等待呗，所以就调用Condition的</span></span><br><span class="line">                    <span class="comment">//await,等待最后一个线程，然后被唤醒(Condition的signal)</span></span><br><span class="line">                    <span class="keyword">if</span> (!timed)</span><br><span class="line">                        trip.await();</span><br><span class="line">                    <span class="keyword">else</span> <span class="keyword">if</span> (nanos &gt; <span class="number">0L</span>)</span><br><span class="line">                        nanos = trip.awaitNanos(nanos);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException ie) &#123;</span><br><span class="line">                    <span class="comment">//如果到达这里，就说明线程在await的时候被中断了</span></span><br><span class="line">                    <span class="keyword">if</span> (g == generation &amp;&amp; ! g.broken) &#123;</span><br><span class="line">                        <span class="comment">//到这里就打破栅栏呗</span></span><br><span class="line">                        breakBarrier();</span><br><span class="line">                        <span class="comment">//打破栅栏之后，抛出异常信息，让外层自己去处理</span></span><br><span class="line">                        <span class="keyword">throw</span> ie;</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        <span class="comment">//这里就是说g != genneration，就是说前面已经开启一个新的</span></span><br><span class="line">                        <span class="comment">//时代啦，说明最后一个线程await完成，所有线程就被唤醒啦！</span></span><br><span class="line">                        <span class="comment">//但是这个中断已经没有意义啦，所以记录下就好！</span></span><br><span class="line">                        Thread.currentThread().interrupt();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">				<span class="comment">//如果栅栏被打破，这里的被打破就是之前执行barrierCommand的时候</span></span><br><span class="line">                <span class="comment">//发生异常，那么被就抛出异常啦</span></span><br><span class="line">                <span class="keyword">if</span> (g.broken)</span><br><span class="line">                    <span class="keyword">throw</span> <span class="keyword">new</span> BrokenBarrierException();</span><br><span class="line"></span><br><span class="line">                <span class="comment">//到这里基本都要退出啦</span></span><br><span class="line">                <span class="comment">//因为之前barrierCommand在执行完任务之后，就会 nextGeneration</span></span><br><span class="line">                <span class="comment">//开启一个新的时代，然后释放锁，等待的线程都是await到这里的，所以肯</span></span><br><span class="line">                <span class="comment">//定await之前的时代和被唤醒后的时代不一样啦！</span></span><br><span class="line">                <span class="comment">//如果之前的栅栏破了或者await的时候被唤醒了，都是在前面就抛出异常</span></span><br><span class="line">                <span class="comment">//都会直接返回啦！</span></span><br><span class="line">                <span class="keyword">if</span> (g != generation)</span><br><span class="line">                    <span class="keyword">return</span> index;</span><br><span class="line">				<span class="comment">//这里是超时的操作了,就不做分析了</span></span><br><span class="line">                <span class="keyword">if</span> (timed &amp;&amp; nanos &lt;= <span class="number">0L</span>) &#123;</span><br><span class="line">                    breakBarrier();</span><br><span class="line">                    <span class="keyword">throw</span> <span class="keyword">new</span> TimeoutException();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>上面的await方法我们已经说得已经很清楚啦，我们接下来看看如何获取在栅栏等待的线程数</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getNumberWaiting</span><span class="params">()</span> </span>&#123;</span><br><span class="line">       <span class="keyword">final</span> ReentrantLock lock = <span class="keyword">this</span>.lock;</span><br><span class="line">       lock.lock();</span><br><span class="line">       <span class="keyword">try</span> &#123;</span><br><span class="line">           <span class="comment">//也就是运算一下就好啦！</span></span><br><span class="line">           <span class="keyword">return</span> parties - count;</span><br><span class="line">       &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">           lock.unlock();</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<p>检查栅栏有没有被打破，其实也就是看看那个标志位有没有被设置就好啦！</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isBroken</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> ReentrantLock lock = <span class="keyword">this</span>.lock;</span><br><span class="line">    lock.lock();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> generation.broken;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        lock.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下面我们来总结一下什么时候栅栏会被打破吧！</p>
+<ol>
+<li>如果在<code>await</code>的线程被中断，那么就会打破栅栏，然后抛出InterruptedException的异常啦</li>
+<li>如果在指定的操作被抛出异常的时候，也会打破栅栏！</li>
+</ol>
+<p>我们再来看下重置栅栏的源码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">reset</span><span class="params">()</span> </span>&#123;</span><br><span class="line">       <span class="keyword">final</span> ReentrantLock lock = <span class="keyword">this</span>.lock;</span><br><span class="line">       lock.lock();</span><br><span class="line">       <span class="keyword">try</span> &#123;</span><br><span class="line">           breakBarrier();   <span class="comment">// break the current generation</span></span><br><span class="line">           nextGeneration(); <span class="comment">// start a new generation</span></span><br><span class="line">       &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">           lock.unlock();</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<p>跟简单，就是打破栅栏，然后重建栅栏！也就是不破不立！</p>
+<p>我们来假设一个情况，加入parties设置为4，此时有3个线程await了，那么在第4个await之前重置</p>
+<p>那么首先打破栅栏嘛，那么就会跑出BrokenBarrierException 异常，然后开启新的一代，再重置CyclicBarrier 的count和generation，一切从0开始！</p>
+<blockquote>
+<p>TIPS:关于AQS的核心功能的源码分析就到此结束啦！继续征战下一个知识！</p>
+</blockquote>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ol>
+<li>本片博客重点分析了CountDownLatch的源码，在分析的过程中，有两个问题迷惑了自己很久，但是自己在尝试跳出局部思维之后，发现有些问题可以迎刃而解，也对AQS共享模式的工作机制有了一定的了解所以希望以后可以保持这种思维。</li>
+<li>在分析CountDownLatch的源码过程中，自己起码可以耐下心去琢磨，希望以后可以更加锻炼阅读优秀源码的能力吧</li>
+<li>在写本博客的时候参考了别人的想法和内容，希望自己可以早日独立写出优秀的文章！</li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/多线程，底层/" rel="tag"># 多线程，底层</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/04/28/AQS-2/" rel="next" title="AQS-2">
+                <i class="fa fa-chevron-left"></i> AQS-2
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/head.JPG" alt="JieMing小铭">
+            
+              <p class="site-author-name" itemprop="name">JieMing小铭</p>
+              <p class="site-description motion-element" itemprop="description">记录学习的过程，加深印象！</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">13</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">7</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#共享锁和独占锁的区别"><span class="nav-number">2.</span> <span class="nav-text">共享锁和独占锁的区别</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#独占锁"><span class="nav-number">2.1.</span> <span class="nav-text">独占锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#共享锁"><span class="nav-number">2.2.</span> <span class="nav-text">共享锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#方法区别"><span class="nav-number">2.3.</span> <span class="nav-text">方法区别</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#示例代码"><span class="nav-number">2.3.1.</span> <span class="nav-text">示例代码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#await源码"><span class="nav-number">2.3.2.</span> <span class="nav-text">await源码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#countDown源码"><span class="nav-number">2.3.3.</span> <span class="nav-text">countDown源码</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CyclicBarrier"><span class="nav-number">3.</span> <span class="nav-text">CyclicBarrier</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#说明"><span class="nav-number">3.1.</span> <span class="nav-text">说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#源码分析"><span class="nav-number">3.2.</span> <span class="nav-text">源码分析</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JieMing小铭</span>
+
+  
+</div>
+
+
+  <div class="powered-by"></div>
+
+
+
+  <span class="post-meta-divider"></span>
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
