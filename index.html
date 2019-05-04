@@ -262,6 +262,270 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/04/多线程规范/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="JieMing小铭">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/head.JPG">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="小铭同学的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/05/04/多线程规范/" itemprop="url">多线程规范</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-04T23:15:21+08:00">
+                2019-05-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/多线程/" itemprop="url" rel="index">
+                    <span itemprop="name">多线程</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p><img src="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2powl68cdj34g02yiqv6.jpg" alt></p>
+<blockquote>
+<p>本文主要是为了巩固一下基础知识，对多线程的锁，wait，notify，中断做一个比较全面的总结，方便以后学习参考！同时在写博客的时候，查阅了资料，也做到一个查漏补缺的作用吧！希望可以和大家一起查漏补缺！</p>
+</blockquote>
+<h2 id="同步"><a href="#同步" class="headerlink" title="同步"></a>同步</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><ol>
+<li><p>Java 提供了多种线程之间通信的机制，其中最基本的就是使用同步 (synchronization)</p>
+</li>
+<li><p>其使用监视器 (monitor) 来实现。java中的<strong>每个对象都关联了一个监视器</strong>，线程可以对其进行加锁和解锁操作。</p>
+</li>
+<li><p>在同一时间，只有一个线程可以拿到对象上的监视器锁。如果其他线程在锁被占用期间试图去获取锁，那么将会被阻塞直到成功获取到锁。同时，监视器锁可以重入，也就是说如果线程 t 拿到了锁，那么线程 t 可以在解锁之前重复获取锁,每次解锁操作会反转一次加锁产生的效果。</p>
+</li>
+</ol>
+<blockquote>
+<p>关于同步，大家可以了解一下Java并发编程中Synchronized这个关键字，如果有不了解的，可以先阅读下<a href="https://juejin.im/post/5ccd84dee51d456e3428c1af" target="_blank" rel="noopener">&lt;深入了解Synchronized原理&gt;</a>，这篇文章说得比较详细，对于阅读下文有很大的帮助！</p>
+</blockquote>
+<p>TIPS:对Class对象加锁和对实例对象加锁，它们之间不构成同步。对于一个类中的两个不同的static方法加锁之间是构成同步的！</p>
+<h2 id="等待集合和唤醒"><a href="#等待集合和唤醒" class="headerlink" title="等待集合和唤醒"></a>等待集合和唤醒</h2><ol>
+<li>我们知道，每个Java对象都与一个监视器关联，同时也关联了一个等待集合，也就是存放想要获取这个锁的线程数据结构</li>
+</ol>
+<ol start="2">
+<li>当一个对象被创建出来时，它的等待集合是空的，对于向等待集合中添加或者移除线程的操作都是原子的，以下几个操作可以操纵这个等待集合：Object.wait, Object.notify, Object.notifyAll。</li>
+</ol>
+<h3 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h3><ol>
+<li><code>Thread</code>的<code>sleep</code>,<code>join</code>,<code>interrupted</code></li>
+<li>继承自Object的<code>wait</code>,<code>notify</code>,<code>notifyAll</code></li>
+<li><strong>Java的中断</strong>（重要）</li>
+</ol>
+<h3 id="wait"><a href="#wait" class="headerlink" title="wait"></a>wait</h3><h4 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h4><p>等待一般由这几个方法触发，<code>wait()</code>，<code>wait(long millisecs)</code>，<code>wait(long millisecs, int nanosecs)</code>,我们着重讲下<code>wait</code>。</p>
+<p>如果调用 <code>wait</code> 方法时没有抛出<code>InterruptedException</code> 异常，则表示正常返回。</p>
+<p>假设有线程t,对象object,object的对象头的设置了线程的ID为n，目前还没解锁，现在执行<code>object.wait()</code>,会有以下几种情况发生</p>
+<ol>
+<li>假如object的对象头没有设置线程t的ID，那么说明该线程并没有拥有该锁，如果用<code>wait</code>会抛出<code>IllegalMonitorStateException</code>的异常。</li>
+<li>如果线程t被中断，那么中断标志被设置为true，并且抛出<code>InterruptedException</code>的异常，并且会重新设置中断标志位false</li>
+<li>假如1和2都没有发生，那么说明没有抛出异常，之前就已经拿到了锁。那么说明调用<code>wait</code>方法正常，就<strong>正常挂起然后释放对象锁</strong></li>
+</ol>
+<h4 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h4><ol>
+<li><p>假如线程 t 在调用<code>wait</code>方法之后(我们假设是正常的情况),那么该线程t就会进入<code>object</code>对象的<code>waitSet</code>中，并且释放该对象对应的锁，下面这段代码表示正常的获取锁，解锁操作！</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> Object object = <span class="keyword">new</span> Object();</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">thread1</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span> (object) &#123; <span class="comment">// 1. 获取监视器锁</span></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            object.wait(); <span class="comment">// 2. 解锁</span></span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            <span class="comment">// do somethings</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol start="2">
+<li><p>此时线程t不会有任何操作啦，直到从<code>object</code>的<code>waitSet</code>中出来，这里的出来，有以下几种情况</p>
+<ul>
+<li><code>object</code>调用了<code>notify</code>方法，并且线程 t 在<code>waitSet</code>中被选中然后移出</li>
+<li><code>object</code>调用了<code>notifyAll</code>方法，并且线程 t 在<code>waitSet</code>中被移出</li>
+<li>线程 t 被 <code>Interrupt</code></li>
+<li><p>如果线程 t 是调用 <code>wait(millisecs)</code>或者 <code>wait(millisecs, nanosecs)</code> 方法进入<code>waitSet</code>的，那么过了millisecs 毫秒或者 (millisecs*1000000+nanosecs) 纳秒后，线程 t 也会从<code>waitSet</code>中移出。</p>
+<blockquote>
+<p>这里线程t从<code>waitSet</code>中出来，并不是马上就往下执行，需要获取锁才行，那么怎么才能获取锁呢？在Synchronized中只有另外一个线程释放掉锁才行！这是需要注意的！</p>
+</blockquote>
+</li>
+</ul>
+</li>
+<li><p>线程 t 正常被<code>notify/notifyAll</code>,获取锁，然后继续从之前<code>wait</code>的地方往下执行啦！</p>
+</li>
+<li><p>线程 t 在<code>wait</code>的时候被中断从而导致从<code>waitSet</code>中出来，那么线程 t 的中断状态会被重新设置为false,并且抛出<code>InterruptedException</code>的异常</p>
+</li>
+</ol>
+<h3 id="notify"><a href="#notify" class="headerlink" title="notify"></a>notify</h3><h4 id="说明-1"><a href="#说明-1" class="headerlink" title="说明"></a>说明</h4><p>顾名思义，就是通知 在 对象object的<code>waitSet</code>的线程 t 出来呗！让线程 t 自己去重新获取锁，然后执行它自己接下来的操作。</p>
+<h4 id="分析-1"><a href="#分析-1" class="headerlink" title="分析"></a>分析</h4><p>在其他线程调用了object的<code>notify/notifyAll</code>。可能会发生下面某一种情况</p>
+<ol>
+<li><code>notify</code>操作，那么object的<code>waitSet</code>不为空，那么就让在<code>waitSet</code>的某一个线程出来。假如说 线程t 在object的<code>waitSet</code>，其他线程调用object的<code>notify</code>，移除的不一定是线程 t，对于哪个线程会被选中而被移出，虚拟机没有提供任何保证。这里需要注意的是，恢复之后的线程 t 如果对 object 进行加锁操作将不会成功，直到拥有锁的线程完全释放锁。</li>
+<li><code>notifyAll</code>操作，那么等待集合中的所有线程都将从等待集合中移出，然后恢复，这些线程恢复后，只有一个线程可以锁住监视器。其他没有拿到锁的线程就继续进入object的<code>waitSet</code>呗。</li>
+</ol>
+<h3 id="Interruptions"><a href="#Interruptions" class="headerlink" title="Interruptions"></a>Interruptions</h3><h4 id="说明-2"><a href="#说明-2" class="headerlink" title="说明"></a>说明</h4><p>上面我们提到了中断，现在我们来说一下，</p>
+<p>在线程 t 调用线程 u 上的方法<code>u.interrupt()</code>，这个操作会将 u 的中断状态设置为 true。</p>
+<p>在u的中断状态设置为true之后，下面几个方法会感知到，也就是说只要u的中断状态设置为true，那么下面几个方法会做出<strong>反应</strong></p>
+<ol>
+<li><p>wait(), wait(long), wait(long, int), join(), join(long), join(long, int), sleep(long), sleep(long, int)</p>
+<p>这些方法的方法签名上都有<code>throws InterruptedException</code>，这个就是用来响应中断状态修改的。</p>
+</li>
+<li><p>如果线程阻塞在 InterruptibleChannel 类的 IO 操作中，那么这个 channel 会被关闭。</p>
+</li>
+<li><p>如果线程阻塞在一个 Selector 中，那么 select 方法会立即返回。</p>
+</li>
+</ol>
+<blockquote>
+<p>如果是上面的情况中当u 的中断状态设置为 true之后（也就是调用<code>u.interrupt()</code>）,会将中断状态<strong>重新设置为 false</strong>，<strong>重新设置为 false</strong>，<strong>重新设置为 false</strong>，然后执行相应的操作（通常就是跳到 catch 异常处）。</p>
+<p>如果不是以上的情况，那么，线程的<code>interrupt()</code>方法被调用，<strong>会将线程的中断状态设置为 true。</strong>（注意是这里不同）</p>
+<p>当然，除了这几个方法， LockSupport 中的<code>park</code> 方法也能自动感知到线程被中断，当然，<strong>它不会重置中断状态为 false</strong>。再说一遍，只有上面的几种情况会在感知到中断后先重置中断状态为 false，然后再继续执行。</p>
+</blockquote>
+<p>这里我们再啰嗦一下，如果有一个对象 o，而且线程 t 此时在 o 的等待集合中，那么 t 将会从 o 的等待集合中移出。这会让 t 从 wait 操作中恢复过来，t 此时需要获取 o 的监视器锁，获取完锁以后，发现线程 t处于中断状态，此时会抛出 <code>InterruptedException</code> 异常。</p>
+<p>实例方法 <code>thread.isInterrupted()</code> 可以知道线程的中断状态。</p>
+<p>调用静态方法 <code>Thread.interrupted()</code>可以返回当前线程的中断状态，同时将中断状态设置为false。</p>
+<p>这个方法调用两次，那么第二次一定会返回 false，因为第一次会重置状态。前提是两次调用的中间没有发生设置线程中断状态的其他语句。</p>
+<h3 id="等待，通知，中断的交互"><a href="#等待，通知，中断的交互" class="headerlink" title="等待，通知，中断的交互"></a>等待，通知，中断的交互</h3><h4 id="说明-3"><a href="#说明-3" class="headerlink" title="说明"></a>说明</h4><p>如果一个线程在<code>wait</code>期间，<strong>同时发生了通知和中断</strong>，它将发生：</p>
+<ol>
+<li>线程被<code>notify</code>唤醒，从<code>wait</code>中正常返回，然后被中断，那么只是设置一下中断标志为true，后面也不会改变中断状态，又不会抛出异常</li>
+<li>先被中断，再<code>notify</code>,那么中断这个操作已经把线程从对象锁的<code>waitSet</code>中取出了，所以<code>notify</code>就不会唤醒这个线程了，那么如之前所说的，这个被中断的线程的中断状态是先被设置为true,被<code>wait</code>感受到中断后，再重新设置为false，那么以后想查看这个线程的状态肯定是false啦！后面就是正常的抛出异常了！</li>
+</ol>
+<blockquote>
+<p>考虑是否有这个场景：x 被设置了中断状态，<strong>notify 选中了集合中的线程 x，那么这次 notify 将唤醒线程 x</strong>，其他线程（我们假设还有其他线程在等待）不会有变化。</p>
+<p>答案：存在这种场景。因为这种场景是满足上述条件的，而且此时 x 的中断状态是 true。</p>
+</blockquote>
+<h4 id="例子"><a href="#例子" class="headerlink" title="例子"></a>例子</h4><ol>
+<li><p>我们先来验证下线程被从<code>wait</code>到被<code>notify</code>之后，需要重新获得锁才能从之前wait的地方往下走的</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> common;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">WaitNotify</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Object object = <span class="keyword">new</span> Object();</span><br><span class="line">            <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    <span class="keyword">synchronized</span> (object)&#123;</span><br><span class="line">                        System.out.println(<span class="string">"t1获取object的锁"</span>);</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                            System.out.println(<span class="string">"t1开始休眠啦！并且交出object的锁！"</span>);</span><br><span class="line">                            object.wait();</span><br><span class="line">                            System.out.println(<span class="string">"t1过了很久终于恢复啦。为什么t2通知我还没恢复呢？因为t2通知我的时候没拿到锁呀！"</span>);</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                            System.out.println(<span class="string">"t1在wait的时候发生了异常啦！"</span>);</span><br><span class="line">                            e.printStackTrace();</span><br><span class="line">                        &#125;</span><br><span class="line">    </span><br><span class="line">                    &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            &#125;,<span class="string">"t1"</span>).start();</span><br><span class="line">    </span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">    </span><br><span class="line">            <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    <span class="keyword">synchronized</span> (object)&#123;</span><br><span class="line">                        System.out.println(<span class="string">"t2获取到t1释放的锁啦！"</span>);</span><br><span class="line">                        System.out.println(<span class="string">"t2 notify一下，但是被通知的t1不能拿到锁，因为我还没释放哈哈哈"</span>);</span><br><span class="line">                        object.notify();</span><br><span class="line">                        System.out.println(<span class="string">"t2 notify完了，那我先sleep 1s 吧,但是和wait不一样，我sleep的时候是不会交出锁的！"</span>);</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                            Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">    </span><br><span class="line">                        &#125;</span><br><span class="line">                    System.out.println(<span class="string">"t2休息够了，结束我的操作了！就让出锁吧"</span>);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;,<span class="string">"t2"</span>).start();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p> <strong>运行结果</strong></p>
+<blockquote>
+<p>t1获取object的锁<br>t1开始休眠啦！并且交出object的锁！<br>t2获取到t1释放的锁啦！<br>t2 notify一下，但是被通知的t1不能拿到锁，因为我还没释放哈哈哈<br>t2 notify完了，那我先sleep 1s 吧,但是和wait不一样，我sleep的时候是不会交出锁的！<br>t2休息够了，结束我的操作了！就让出锁吧<br>t1过了很久终于恢复啦。为什么t2通知我还没恢复呢？因为t2通知我的时候没拿到锁呀！</p>
+</blockquote>
+</li>
+</ol>
+<ol start="2">
+<li><p>我们做点修改，让t1线程被中断，然后被需要重新获取锁才能继续往下走，也就是捕获异常</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> common;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">WaitNotify</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Object object = <span class="keyword">new</span> Object();</span><br><span class="line">        Thread t1 = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">synchronized</span> (object)&#123;</span><br><span class="line">                    System.out.println(<span class="string">"t1获取object的锁"</span>);</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        System.out.println(<span class="string">"t1开始休眠啦！并且交出object的锁！"</span>);</span><br><span class="line">                        object.wait();</span><br><span class="line">                        System.out.println(<span class="string">"t1过了很久终于恢复啦。为什么t2通知我还没恢复呢？因为t2通知我的时候没拿到锁呀！"</span>);</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                        System.out.println(<span class="string">"t1在wait过了很久终于发生了异常啦！因为t2开始中断的时候我还没拿到锁，等到t2释放锁我才到这里！"</span>);</span><br><span class="line"><span class="comment">//                        e.printStackTrace();</span></span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,<span class="string">"t1"</span>);</span><br><span class="line">        t1.start();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        Thread t2 = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">synchronized</span> (object)&#123;</span><br><span class="line">                    System.out.println(<span class="string">"t2获取到t1释放的锁啦！"</span>);</span><br><span class="line">                    System.out.println(<span class="string">"t2 notify一下，但是被通知的t1不能拿到锁，因为我还没释放哈哈哈"</span>);</span><br><span class="line">                    t1.interrupt();</span><br><span class="line">                    System.out.println(<span class="string">"t2 notify完了，那我先sleep 1s 吧,但是和wait不一样，我sleep的时候是不会交出锁的！"</span>);</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line"></span><br><span class="line">                    &#125;</span><br><span class="line">                    System.out.println(<span class="string">"t2休息够了，结束我的操作了！就让出锁吧"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,<span class="string">"t2"</span>);</span><br><span class="line">        t2.start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>运行结果</strong></p>
+<blockquote>
+<p>t1获取object的锁<br>t1开始休眠啦！并且交出object的锁！<br>t2获取到t1释放的锁啦！<br>t2 notify一下，但是被通知的t1不能拿到锁，因为我还没释放哈哈哈<br>t2 notify完了，那我先sleep 1s 吧,但是和wait不一样，我sleep的时候是不会交出锁的！<br>t2休息够了，结束我的操作了！就让出锁吧<br>t1在wait过了很久终于发生了异常啦！因为t2开始中断的时候我还没拿到锁，等到t2释放锁我才到这里！</p>
+</blockquote>
+</li>
+<li><p>中断和notify同时发生的情况，如果是先被中断，再notify，那么就如之前所说的啦，直接看代码！</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> common;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">WaitNotify</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">volatile</span> <span class="keyword">int</span> a = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        Object object = <span class="keyword">new</span> Object();</span><br><span class="line">        WaitNotify waitNotify = <span class="keyword">new</span> WaitNotify();</span><br><span class="line">        Thread t1 = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">synchronized</span> (object)&#123;</span><br><span class="line">                    System.out.println(<span class="string">"t1获取object的锁"</span>);</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        System.out.println(<span class="string">"t1开始wait啦！并且交出object的锁！"</span>);</span><br><span class="line">                        object.wait();</span><br><span class="line">                        System.out.println(<span class="string">"t1在被t3 notify 之后拿到锁才执行这条语句"</span>);</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                        <span class="comment">//先被中断，由于t1已经从waitSet中出来了，所以notify就不会有t1了！</span></span><br><span class="line">                        System.out.println(<span class="string">"t1在wait的时候被中断啦！虽然被中断了，但是t1只能在获取锁之后才可以执行这条语句，由于t1已经从waitSet中出来了，所以notify就不会有t1了！"</span> + Thread.currentThread().isInterrupted());</span><br><span class="line"><span class="comment">//                        e.printStackTrace();</span></span><br><span class="line">                    &#125;<span class="keyword">finally</span> &#123;</span><br><span class="line">                        <span class="keyword">if</span>(Thread.interrupted())&#123; <span class="comment">//t1先被notify然后再被中断的情况,此时Thread.interrupted()是为true的</span></span><br><span class="line">                            System.out.println(<span class="string">"t1在被中断之前就被notify啦，但是t2是不会被唤醒的！t1并且不抛出中断异常，只是简单的设置中断标志位true"</span> +</span><br><span class="line">                                    <span class="string">" 然后重置为 "</span> + Thread.interrupted());</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,<span class="string">"t1"</span>);</span><br><span class="line"></span><br><span class="line">        t1.start();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        Thread t2 = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">synchronized</span> (object)&#123;</span><br><span class="line">                    System.out.println(<span class="string">"t2获取到t1释放的锁啦！"</span>);</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        System.out.println(<span class="string">"t2开始wait啦！并且交出object的锁！"</span>);</span><br><span class="line">                        object.wait();</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line"></span><br><span class="line">                    &#125;</span><br><span class="line">                    System.out.println(<span class="string">"t2重新拿到锁啦"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,<span class="string">"t2"</span>);</span><br><span class="line">        t2.start();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">2000</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        Thread t3 = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">synchronized</span> (object)&#123;</span><br><span class="line">                    System.out.println(<span class="string">"t3获取到t2释放的锁啦！"</span>);</span><br><span class="line">                    System.out.println(<span class="string">"t3开始中断t1"</span>);</span><br><span class="line">                    t1.interrupt();<span class="comment">//这里测试是先中断，然后再notify的！</span></span><br><span class="line">                    waitNotify.a = <span class="number">1</span>;<span class="comment">//volatile 属性赋值主要是为了防止指令重排序</span></span><br><span class="line">                    System.out.println(<span class="string">"t3 执行notify，但是不知道后面唤醒的是哪一个！"</span>);</span><br><span class="line">                    object.notify();</span><br><span class="line">                    System.out.println(<span class="string">"t3 调用完notify后，休息一会"</span>);</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        Thread.sleep(<span class="number">3000</span>);</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                        e.printStackTrace();</span><br><span class="line">                    &#125;</span><br><span class="line">                    System.out.println(<span class="string">"t3休息够啦！，结束同步代码块！"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,<span class="string">"t3"</span>);</span><br><span class="line">        t3.start();</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<pre><code>**运行结果**
+![](http://ww1.sinaimg.cn/large/006ozI4Ygy1g2pnxvfziej30r307ljru.jpg)
+</code></pre><ol start="4">
+<li><p>中断和<code>notify</code>同时发生的情况，如果是先被<code>notify</code>，再中断的情况，之前也说过啦，那么直接看代码！</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> common;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">WaitNotify</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">volatile</span> <span class="keyword">int</span> a = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        Object object = <span class="keyword">new</span> Object();</span><br><span class="line">        WaitNotify waitNotify = <span class="keyword">new</span> WaitNotify();</span><br><span class="line">        Thread t1 = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">synchronized</span> (object)&#123;</span><br><span class="line">                    System.out.println(<span class="string">"t1获取object的锁"</span>);</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        System.out.println(<span class="string">"t1开始wait啦！并且交出object的锁！"</span>);</span><br><span class="line">                        object.wait();</span><br><span class="line">                        System.out.println(<span class="string">"t1在被t3 notify 之后拿到锁才执行这条语句"</span>);</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                        <span class="comment">//先被中断，由于t1已经从waitSet中出来了，所以notify就不会有t1了！</span></span><br><span class="line">                        System.out.println(<span class="string">"t1在wait的时候被中断啦！虽然被中断了，但是t1只能在获取锁之后才可以执行这条语句，由于t1已经从waitSet中出来了，所以notify就不会有t1了！"</span> + Thread.currentThread().isInterrupted());</span><br><span class="line"><span class="comment">//                        e.printStackTrace();</span></span><br><span class="line">                    &#125;<span class="keyword">finally</span> &#123;</span><br><span class="line">                        <span class="keyword">if</span>(Thread.interrupted())&#123; <span class="comment">//t1先被notify然后再被中断的情况,此时Thread.interrupted()是为true的</span></span><br><span class="line">                            System.out.println(<span class="string">"t1在被中断之前就被notify啦，但是t2是不会被唤醒的！t1并且不抛出中断异常，只是简单的设置中断标志位true"</span> +</span><br><span class="line">                                    <span class="string">" 然后重置为 "</span> + Thread.interrupted());</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,<span class="string">"t1"</span>);</span><br><span class="line"></span><br><span class="line">        t1.start();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        Thread t2 = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">synchronized</span> (object)&#123;</span><br><span class="line">                    System.out.println(<span class="string">"t2获取到t1释放的锁啦！"</span>);</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        System.out.println(<span class="string">"t2开始wait啦！并且交出object的锁！"</span>);</span><br><span class="line">                        object.wait();</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line"></span><br><span class="line">                    &#125;</span><br><span class="line">                    System.out.println(<span class="string">"t2重新拿到锁啦"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,<span class="string">"t2"</span>);</span><br><span class="line">        t2.start();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">2000</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        Thread t3 = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">synchronized</span> (object)&#123;</span><br><span class="line">                    System.out.println(<span class="string">"t3获取到t2释放的锁啦！"</span>);</span><br><span class="line">                    System.out.println(<span class="string">"t3开始中断t1"</span>);</span><br><span class="line">                    object.notify(); <span class="comment">//这里特意先把notify放在前面是为了测试先被t1 notify，然后t1 再被中断的情况</span></span><br><span class="line">                    waitNotify.a = <span class="number">1</span>;<span class="comment">//volatile 属性赋值主要是为了防止指令重排序</span></span><br><span class="line">                    System.out.println(<span class="string">"t3 执行notify，但是不知道后面唤醒的是哪一个！"</span>);</span><br><span class="line">                    t1.interrupt(); <span class="comment">// t1 中断</span></span><br><span class="line">                    System.out.println(<span class="string">"t3 调用完notify后，休息一会"</span>);</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        Thread.sleep(<span class="number">3000</span>);</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                        e.printStackTrace();</span><br><span class="line">                    &#125;</span><br><span class="line">                    System.out.println(<span class="string">"t3休息够啦！，结束同步代码块！"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,<span class="string">"t3"</span>);</span><br><span class="line">        t3.start();</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>运行结果</strong><br> <img src="http://ww1.sinaimg.cn/large/006ozI4Ygy1g2pnxfrvmhj30o007fmxl.jpg" alt></p>
+</li>
+</ol>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/03/AQS-3/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2478,208 +2742,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/16/SpringAOP实现原理/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="JieMing小铭">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/head.JPG">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="小铭同学的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/16/SpringAOP实现原理/" itemprop="url">SpringAOP实现原理</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-16T23:42:16+08:00">
-                2019-03-16
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Spring/" itemprop="url" rel="index">
-                    <span itemprop="name">Spring</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程"><a href="#在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程" class="headerlink" title="在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程"></a>在了解SpringAOP的代理方式之前，先了解一下java程序到可执行文件的过程</h3><ul>
-<li><strong>编译</strong>：  <em>.java 被编译为 </em>.class（字节码文件），也就是源程序被转化为二进制文件</li>
-<li><strong>加载</strong>：   在执行java程序之前，会先对这个java程序的字节码文件进行检查，如果发现某个加类载器加载过这个字节码文件，则会使用。当找完所有类加载器，发现这个程序没有被加载进JVM运行数据的加载区的时候，则会进行加载。</li>
-<li>连接，类初始化，内存分配。</li>
-<li>详情参考<ul>
-<li><a href="https://www.cnblogs.com/fefjay/p/6305499.html" target="_blank" rel="noopener">https://www.cnblogs.com/fefjay/p/6305499.html</a></li>
-<li><a href="https://blog.csdn.net/weixin_37766296/article/details/80545283" target="_blank" rel="noopener">https://blog.csdn.net/weixin_37766296/article/details/80545283</a></li>
-</ul>
-</li>
-</ul>
-<h3 id="SringAOP的动态代理方式"><a href="#SringAOP的动态代理方式" class="headerlink" title="SringAOP的动态代理方式"></a>SringAOP的动态代理方式</h3><h5 id="何为代理？"><a href="#何为代理？" class="headerlink" title="何为代理？"></a>何为代理？</h5><ol>
-<li>官方说法：给某一个对象提供一个代理对象，<strong>并且由代理对象控制目标对象</strong></li>
-<li>举个例子：每个明星都有自己的经纪人。（<strong>明星是真是执行对象，经纪人是代理对象</strong>）假如你是某地产商，也许会需要请明星来为你的开业活动助兴，也就是说请明星来唱歌跳舞。假如我们直接请明星，是会失败的(<u>因为明星这么忙，没有时间谈这种琐事，会和你说你找我的经纪人讨论这件事请吧</u>)，则我们直接找到经纪人，如果顺利的话，则可以请到这位明星，而经纪人的存在价值，就是拦截你直接去找明星。（<strong>代理对象的存在价值就是拦截客户直接访问真实的对象</strong>）但是，我们怎么知道明星会做些什么呢，所以我们就需要通过询问代理人明星会做什么，比如唱什么类型的歌，表演什么样类型的节目。因为只有代理人才知道明星会做什么，也就是说，真实执行方法的对象的方法要和代理对象的方法是要一致的</li>
-</ol>
-<h5 id="在Spring中为什么要代理？"><a href="#在Spring中为什么要代理？" class="headerlink" title="在Spring中为什么要代理？"></a>在Spring中为什么要代理？</h5><p>​    在应用程序的业务方法中，有些辅助功能（安全校验，事务）是很多业务方法都需要执行的，而这些辅助功能不是业务方法应该关注的点。假如把辅助功能写入每一个业务方法里，第一增大了代码的耦合性，假如在很多方法执行了一样的代码，以后需要修改某个功能将是个噩梦。第二是这些辅助功能与业务方法毫无逻辑关系，是业务方法应该关注的点，会不利于开发人员的开发。</p>
-<h5 id="JDK动态代理"><a href="#JDK动态代理" class="headerlink" title="JDK动态代理"></a>JDK动态代理</h5><ol>
-<li><p>利用拦截器（此拦截器必须实现InvocationHandler接口）和反射的机制，生成一个实现了接口类的代理类，调用实现接口类的接口方法的时候，就会直接调用代理类的invoke()方法</p>
-</li>
-<li><p>只能代理实现接口的目标对象</p>
-</li>
-<li><p>代码：</p>
-<p>  3.1 接口</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> AopTest;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Created by JieMing on 2018/12/4.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">TestDemo</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">sayHi</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>  3.2  接口实现类</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> AopTest;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Created by JieMing on 2018/12/4.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestDemoImpl</span> <span class="keyword">implements</span> <span class="title">TestDemo</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">sayHi</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"hello world"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>  3.3 实现InvocationHandler的实现类</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> AopTest;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.InvocationHandler;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Method;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Proxy;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Created by JieMing on 2018/12/4.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">InceptorByJDK</span> <span class="keyword">implements</span> <span class="title">InvocationHandler</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Object targetObject;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">newProxyInstance</span><span class="params">(Object object)</span></span>&#123;</span><br><span class="line">        targetObject = object;</span><br><span class="line">        <span class="comment">//第一个参数：设置被代理对象的类加载器</span></span><br><span class="line">        <span class="comment">//第二个参数：设置被代理对象所拥有的接口方法</span></span><br><span class="line">        <span class="comment">//第三个参数：设置为this,表示当被代理对象调用被拦截的方法时，会执行这个类的invoke方法。也就是会自动执行实现InvocationHandler接口的invoke方法</span></span><br><span class="line">        Proxy proxy = (Proxy) Proxy.newProxyInstance(targetObject.getClass().getClassLoader(),targetObject.getClass().getInterfaces(),<span class="keyword">this</span>);</span><br><span class="line">        <span class="keyword">return</span> proxy;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object proxy, Method method, Object[] args)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">        proNotify();</span><br><span class="line">        <span class="comment">//call target object's method，反射、</span></span><br><span class="line">        Object ret = method.invoke(targetObject,args);</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">proNotify</span><span class="params">()</span></span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"前置通知"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>  3.4 运行主方法</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> AopTest;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Created by JieMing on 2018/12/4.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestMain</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        TestDemo proxyInstance = (TestDemo) <span class="keyword">new</span> InceptorByJDK().newProxyInstance(<span class="keyword">new</span> TestDemoImpl());</span><br><span class="line">        proxyInstance.sayHi();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>  3.5 运行结果</p>
-<p><img src="/2019/03/16/SpringAOP实现原理/res1.png" alt="res1"></p>
-</li>
-</ol>
-<h5 id="CgLib实现动态代理"><a href="#CgLib实现动态代理" class="headerlink" title="CgLib实现动态代理"></a>CgLib实现动态代理</h5><p>– 通过ASM包，当被代理的对象的<strong>字节码</strong>被加载进来的时候，通过修改其字节码生成子类的并且覆盖父类的方法的方式进行代理，因为根本是继承，所以不能对final修饰的类进行代理。</p>
-<p>– 代码示例</p>
-<ol>
-<li><p>实现MethodInterceptor的代理类</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> AopTest;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.springframework.cglib.proxy.Enhancer;</span><br><span class="line"><span class="keyword">import</span> org.springframework.cglib.proxy.MethodInterceptor;</span><br><span class="line"><span class="keyword">import</span> org.springframework.cglib.proxy.MethodProxy;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Method;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Created by JieMing on 2018/12/4.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">InceptorByCgLib</span> <span class="keyword">implements</span> <span class="title">MethodInterceptor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Object targetObject;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">getInstance</span><span class="params">(Object targetObject)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.targetObject = targetObject;</span><br><span class="line">        <span class="comment">//用这个类来创建代理对象</span></span><br><span class="line">        Enhancer enhancer = <span class="keyword">new</span> Enhancer();</span><br><span class="line">        <span class="comment">//设置父类</span></span><br><span class="line">        enhancer.setSuperclass(<span class="keyword">this</span>.targetObject.getClass());</span><br><span class="line">        <span class="comment">//设置回调函数，当被代理对象执行方法时，会执行这个类的回调函数intercept</span></span><br><span class="line">        enhancer.setCallback(<span class="keyword">this</span>);</span><br><span class="line">        <span class="comment">//返回新创建好的代理对象</span></span><br><span class="line">        <span class="keyword">return</span> enhancer.create();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">/*o是被代理对象，method是被拦截的方法，obj是被拦截方法的参数，methodProxy是method的代理类</span></span><br><span class="line"><span class="comment">    * 也就是说可以同过methodProxy调用method*/</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">intercept</span><span class="params">(Object o, Method method, Object[] objects, MethodProxy methodProxy)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">        preNotify();</span><br><span class="line">        <span class="comment">//调用父类的方法，也就是被代理对象的方法</span></span><br><span class="line">        Object object = methodProxy.invokeSuper(o,objects);</span><br><span class="line">        <span class="keyword">return</span> object;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">preNotify</span><span class="params">()</span></span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"这是前置增强"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>被代理类</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> AopTest;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Created by JieMing on 2018/12/4.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CgDemo</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">sayName</span><span class="params">()</span></span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"I am JieMingLi"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>运行方法</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> AopTest;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Created by JieMing on 2018/12/4.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestMain</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        InceptorByCgLib inceptorByCgLib = <span class="keyword">new</span> InceptorByCgLib();</span><br><span class="line">        CgDemo proxy = (CgDemo) inceptorByCgLib.getInstance(<span class="keyword">new</span> CgDemo());</span><br><span class="line">        proxy.sayName();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>运行结果</p>
-<p><img src="/2019/03/16/SpringAOP实现原理/res2.png" alt="res2"></p>
-</li>
-</ol>
-<h5 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h5><p>Spring框架中</p>
-<ol>
-<li>假如目标类实现了接口，则会使用JDK代理，否则用cglib代理实现AOP</li>
-<li>如果目标对象是实现接口的类，也可以强制转换为cglib代理</li>
-<li>默认的情况下是jdk代理</li>
-<li>会自动在cglib代理和jdk代理之间转换</li>
-</ol>
-<p>参考</p>
-<ol>
-<li><a href="https://blog.csdn.net/yhl_jxy/article/details/80635012" target="_blank" rel="noopener">https://blog.csdn.net/yhl_jxy/article/details/80635012</a></li>
-<li><a href="https://www.cnblogs.com/leifei/p/8263448.html" target="_blank" rel="noopener">https://www.cnblogs.com/leifei/p/8263448.html</a></li>
-</ol>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2732,7 +2794,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">13</span>
+                  <span class="site-state-item-count">14</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -2743,7 +2805,7 @@
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">7</span>
+                  <span class="site-state-item-count">8</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
