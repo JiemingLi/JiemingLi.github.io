@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="多线程,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="前言本次自己实现一个简单的线程池，主要是为了后续看`ThreadPool`的源码做准备的，是从别人的代码中改进的，从看别人的源码中学到一些东西，所以特意把这篇文章写出来，方便以后自己去回顾自己是如何学习。当然也希望分享出来可以对别人产生良好的影响！  使用Java的线程池在自己实现一个线程池之前，首先要知道怎么用。因为知道怎么用之后才能去理解一些代码的编写。关于怎么用这里就不再多加赘述了，百度或者">
+<meta name="keywords" content="多线程">
+<meta property="og:type" content="article">
+<meta property="og:title" content="手动造一个线程池(Java)">
+<meta property="og:url" content="http://yoursite.com/2019/05/11/手动造一个线程池-Java/index.html">
+<meta property="og:site_name" content="小铭同学的博客">
+<meta property="og:description" content="前言本次自己实现一个简单的线程池，主要是为了后续看`ThreadPool`的源码做准备的，是从别人的代码中改进的，从看别人的源码中学到一些东西，所以特意把这篇文章写出来，方便以后自己去回顾自己是如何学习。当然也希望分享出来可以对别人产生良好的影响！  使用Java的线程池在自己实现一个线程池之前，首先要知道怎么用。因为知道怎么用之后才能去理解一些代码的编写。关于怎么用这里就不再多加赘述了，百度或者">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Yly1g2xpbdulvij33uw2klnpk.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Yly1g2wk4r3qk4j30l70jf0th.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Yly1g2xozczuxrj30eq0b90t0.jpg">
+<meta property="og:updated_time" content="2019-05-11T14:02:44.356Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="手动造一个线程池(Java)">
+<meta name="twitter:description" content="前言本次自己实现一个简单的线程池，主要是为了后续看`ThreadPool`的源码做准备的，是从别人的代码中改进的，从看别人的源码中学到一些东西，所以特意把这篇文章写出来，方便以后自己去回顾自己是如何学习。当然也希望分享出来可以对别人产生良好的影响！  使用Java的线程池在自己实现一个线程池之前，首先要知道怎么用。因为知道怎么用之后才能去理解一些代码的编写。关于怎么用这里就不再多加赘述了，百度或者">
+<meta name="twitter:image" content="http://ww1.sinaimg.cn/large/006ozI4Yly1g2xpbdulvij33uw2klnpk.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"right","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/05/11/手动造一个线程池-Java/">
+
+
+
+
+
+  <title>手动造一个线程池(Java) | 小铭同学的博客</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">小铭同学的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-something">
+          <a href="/something/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br>
+            
+            something
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/11/手动造一个线程池-Java/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="JieMing小铭">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/head.JPG">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="小铭同学的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">手动造一个线程池(Java)</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-11T22:01:23+08:00">
+                2019-05-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java基础/" itemprop="url" rel="index">
+                    <span itemprop="name">Java基础</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><pre><code>本次自己实现一个简单的线程池，主要是为了后续看`ThreadPool`的源码做准备的，是从别人的代码中改进的，从看别人的源码中学到一些东西，所以特意把这篇文章写出来，方便以后自己去回顾自己是如何学习。当然也希望分享出来可以对别人产生良好的影响！
+</code></pre><p><img src="http://ww1.sinaimg.cn/large/006ozI4Yly1g2xpbdulvij33uw2klnpk.jpg" alt></p>
+<h2 id="使用Java的线程池"><a href="#使用Java的线程池" class="headerlink" title="使用Java的线程池"></a>使用Java的线程池</h2><pre><code>在自己实现一个线程池之前，首先要知道怎么用。因为知道怎么用之后才能去理解一些代码的编写。关于怎么用这里就不再多加赘述了，百度或者谷歌一下就好，为了不让读者花过多的时间去找，我找了[一篇文章](https://www.cnblogs.com/zhicheng-hu/p/9877684.html)，说得比较清楚。
+</code></pre><h2 id="总览"><a href="#总览" class="headerlink" title="总览"></a>总览</h2><p><img src="http://ww1.sinaimg.cn/large/006ozI4Yly1g2wk4r3qk4j30l70jf0th.jpg" alt></p>
+<p>我们可以看到，除了<code>Thread</code>和<code>Runnable</code>，其他都是我们自己定义的，下面我们来逐一说明。</p>
+<p>在我们开始分析之前，先说下线程池的工作流程，也方便大家后面看的时候心理有一个底。</p>
+<p>线程池顾名思义就是一个存放多个线程的池子。那么在计算机语言中，我们就是用数据结构来存放线程，在本线程池中用的是一个队列来存放要处理任务的线程。所以在线程池一启动，线程池里面就应该有一定数量的线程数目了，那么这个线程的数目是多少我们先不用管，只需要知道有一些线程在等待用户把所需要线程执行的任务放进池子里面。然后线程池里面的线程就会自动帮你执行任务啦。</p>
+<p>当然有些人说，我执行一个任务就创建一个线程就好了呀，何必大费周章呢。我们需要知道，来一个任务就创建一个线程，</p>
+<ol>
+<li><p>创建线程需要时间 ，影响响应速度。 </p>
+</li>
+<li><p>系统资源有限，如果有数以万计的线程需要创建，会大大消耗系统资源，会降低系统的稳定性。 </p>
+</li>
+</ol>
+<p>其实有很多任务的时候，有些线程只是处理一些很轻的任务，很快就完成了，那么如果下一个任务刚好到达的时候，之前的线程也刚好完成工作了，那么这个线程就顺便接下到来的任务，这样的话岂不是提高了响应速度，然后又重复利用了线程，降低系统资源的损耗。岂不是一举两得。</p>
+<p>之前都是恰巧，那么我们稍微放宽一点条件。如果线程执行完任务了，就先别退出呗。而是在等待执行任务，这个线程就可以看做被赋予<strong>执行任务</strong>的命令！<strong>就等着任务来，任务一来，我就去执行。任务执行结束，线程就等，直到下一个任务来。周而复始，直到手动关闭！</strong>这就是线程池的本质。</p>
+<p>那么问题来了，线程池里面只有5个线程在等待执行任务，可是同时来了10个任务需要执行，那么有5个任务被执行了，剩下那5个放哪里？难道被丢弃？这可不是我们设计线程池的初衷！你肯定可以想到，肯定是拿一样数据结构去存储剩下的线程呀！(我们用队列存储，然后称为工作队列。)因为线程处理任务的时间是不一定的，肯定是有些线程处理的快，有些慢。所以谁先处理的快，谁就去处理剩下的任务。正所谓能者多劳！</p>
+<p>再抛出一个问题，假如前面5个线程执行得很慢，那么后面那5个线程就需要等很久，这时候还不如直接创建线程去操作呢，没错，线程池在设计的时候也想到过这个问题，关于这个问题在后面我们设计的时候会说道，这里就先往下看吧！</p>
+<p>既然涉及到多线程，那么肯定就涉及到同步的问题，对哪个对象需要同步呢？当然是任务队列啦。我们需要知道很有可能同时会有很多个线程对<strong>同一个任务队列</strong>取任务和放任务的，所以为了实现同步，我们这里用了<a href="https://juejin.im/post/5ccd84dee51d456e3428c1af" target="_blank" rel="noopener"><code>synchronized</code></a>关键字实现同步,也就是对这个任务队列加一把锁，哪个线程可以拿到操作任务队列的锁哪个线程就可以领取任务。没拿到这把锁的线程就死等，除非被中断或者手动关闭。</p>
+<p>这里需要注意的是<strong>挂起阻塞</strong>和<strong>等待拿锁</strong>的区别。</p>
+<ol>
+<li><p><strong>挂起阻塞</strong>是该线程拿到锁之后调用<code>await</code>方法才会进入的状态，前提是先拿到锁。被通知之后就会被唤醒，然后从<code>await</code>之后的代码执行。</p>
+</li>
+<li><p><strong>等待拿锁</strong>是别的线程还在占有锁，此时的线程还没拿到锁，就会进入这个锁的entrySet序列等待，直到锁被释放然后再去抢，抢到为止！</p>
+</li>
+</ol>
+<p>经过上面的讲解，我们可以基本了解了线程池的设计思想和原理，下面补充点内容。</p>
+<ol>
+<li><p>线程池内部有两个数据结构（队列）分别存放需要<strong>执行任务的线程</strong>(也叫工作线程)和所需要被*<em>执行的任务</em>。</p>
+</li>
+<li><p>线程池初始化的线程放在<strong>工作队列</strong>里面，用户想要执行的任务放在<strong>任务队列</strong></p>
+</li>
+<li><p>在用户添加任务之后，会通知工作队列的线程去取任务啦！</p>
+</li>
+<li><p>工作队列的线程如果有空并且任务队列不为空，哪个线程拿到锁哪个线程就可以在任务队列取任务，然后任务队列的任务数就-1。</p>
+</li>
+<li><p>很多个线程去拿锁的时候，只能有一个线程拿到。<strong>其他没拿到锁的线程不是阻塞等待，而是等待拿锁！</strong></p>
+</li>
+<li><p>如果拿到锁之后任务队列为空，就挂起阻塞。如果被通知唤醒，继续执行3 4 5 6操作。</p>
+</li>
+</ol>
+<p>先看看我们这个整个线程池的流程图，这样设计的时候就知道怎么回事了！</p>
+<pre><code>![](http://ww1.sinaimg.cn/large/006ozI4Yly1g2wnd46e8ij30t11egtam.jpg)
+</code></pre><h2 id="过程"><a href="#过程" class="headerlink" title="过程"></a>过程</h2><p> BaseThreadPool</p>
+<p>先看看这个类的基本属性</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BaseThreadPool</span> <span class="keyword">extends</span> <span class="title">Thread</span> <span class="keyword">implements</span> <span class="title">ThreadPool</span> </span>&#123; </span><br><span class="line">	</span><br><span class="line">    <span class="comment">/*初始化线程数*/</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> initSize;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*最大工作线程数*/</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> maxSize;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*核心线程数*/</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> coreSize;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*当前活跃线程数*/</span></span><br><span class="line">    <span class="keyword">private</span>  <span class="keyword">int</span> activityCount = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*指定任务队列的大小数*/</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> queueSize;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*创建工作线程的工厂，在构造方法由线程池规定好*/</span></span><br><span class="line">    <span class="keyword">private</span> ThreadFactory threadFactory;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*1. 任务队列，在构造方法由线程池规定好*/</span></span><br><span class="line">    <span class="keyword">private</span> RunnableQueue runnableQueue;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2. 工作队列</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> Queue&lt;ThreadTask&gt; threadQueue = <span class="keyword">new</span> ArrayDeque&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//3. 本线程池默认的拒绝策略</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> DenyPolicy DEFAULT_DENY_POLICY = <span class="keyword">new</span> DenyPolicy.IgnoreDenyPolicy();</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*4. 默认的线程工厂*/</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> ThreadFactory DEFAULT_THREAD_FACTORY =<span class="keyword">new</span> DefaultThreadFactory();</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*线程池是否关闭，默认为false*/</span></span><br><span class="line">    <span class="keyword">boolean</span> isShutdown = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span>  <span class="keyword">long</span> keepAliveTime;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span>  TimeUnit timeUnit ;</span><br></pre></td></tr></table></figure>
+<p>由上面的属性我们知道，我们自定义的线程池这个类是依赖于几个类的。</p>
+<p>依次是 <code>RunnableQueue</code>，<code>DenyPolicy</code>，<code>ThreadFactory</code>。</p>
+<p>并且由总览图我们知道，<code>BaseThreadPool</code>是实现了我们定义的<code>ThreadPool</code>接口和继承了Thread类，并且重写了run方法</p>
+<p>run 里面的逻辑到后面再分析,这里可以先跳过这里。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123; <span class="comment">// BaseThreadPool</span></span><br><span class="line">        <span class="keyword">while</span> (!isShutdown &amp;&amp; !isInterrupted())&#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                timeUnit.sleep(keepAliveTime);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">               <span class="comment">//到这里就是关闭线程池了</span></span><br><span class="line">                isShutdown = <span class="keyword">true</span>;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line"><span class="comment">//          这里同步代码块，保证了每次访问的时候都是最新的数据！</span></span><br><span class="line">            <span class="keyword">synchronized</span> (<span class="keyword">this</span>)&#123;</span><br><span class="line">                <span class="keyword">if</span>(isShutdown) <span class="keyword">break</span>;</span><br><span class="line"><span class="comment">//                任务队列不为空，并且当前可以工作的线程小于coreCount，那么说明工作线程数不够，就先增加到maxSize</span></span><br><span class="line"><span class="comment">//                比如说coreSize 为20，initSize为10，maxSize 为30,</span></span><br><span class="line"><span class="comment">//                突然一下子来了20分线程进来，但是工作线程只有15个，由于某种原因可能那15个工作现场还没执行完，那么此时的任务队列肯定还有剩余的，发现此时线程还没到coreSize</span></span><br><span class="line"><span class="comment">//                那么就直接开maxSize个线程先把</span></span><br><span class="line">                <span class="keyword">if</span>(runnableQueue.size() &gt; <span class="number">0</span>)&#123;</span><br><span class="line">                    <span class="keyword">for</span> (<span class="keyword">int</span> i = runnableQueue.size(); i &lt; maxSize; i++) &#123;</span><br><span class="line">                        newThread();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line"><span class="comment">//                任务队列为空，并且当前可以工作的线程数大于coreCount，工作线程数太多啦！那么就减少到coreCount</span></span><br><span class="line">                <span class="keyword">if</span>(runnableQueue.size() == <span class="number">0</span> &amp;&amp;  activityCount &gt; coreSize)&#123;</span><br><span class="line">                    <span class="keyword">for</span> (<span class="keyword">int</span> i = coreSize; i &lt; activityCount; i++) &#123;</span><br><span class="line">                        removeThread();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>我们先来看下BaseThreadPool的构造方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//1 用户传入初始化线程数，最大线程数，核心线程数，和任务队列的大小即可</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">BaseThreadPool</span><span class="params">(<span class="keyword">int</span> initSize, <span class="keyword">int</span> maxSize, <span class="keyword">int</span> coreSize,<span class="keyword">int</span> queueSize)</span> </span>&#123;</span><br><span class="line">   <span class="comment">/*这里创建线程的工厂和拒绝策略都是用自己定义好的对象*/</span>  <span class="keyword">this</span>(initSize,maxSize,coreSize,queueSize,DEFAULT_THREAD_FACTORY,DEFAULT_DENY_POLICY,<span class="number">10</span>,TimeUnit.SECONDS);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">BaseThreadPool</span><span class="params">(<span class="keyword">int</span> initSize, <span class="keyword">int</span> maxSize, <span class="keyword">int</span> coreSize, <span class="keyword">int</span> queueSize, ThreadFactory threadFactory, DenyPolicy denyPolicy, <span class="keyword">long</span> keepAliveTime, TimeUnit timeUnit)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.initSize = initSize; <span class="comment">//初始化线程池的初始化线程数</span></span><br><span class="line">        <span class="keyword">this</span>.maxSize = maxSize; <span class="comment">// 初始化线程池可以拥有最大的线程数</span></span><br><span class="line">        <span class="keyword">this</span>.coreSize = coreSize; <span class="comment">// 这个值的意义后面说</span></span><br><span class="line">        <span class="keyword">this</span>.threadFactory = threadFactory; <span class="comment">//初始化创建线程池的工厂</span></span><br><span class="line">        <span class="comment">//自定义存放任务的队列</span></span><br><span class="line">        <span class="keyword">this</span>.runnableQueue = <span class="keyword">new</span> LinkRunnableQueue(queueSize,denyPolicy,<span class="keyword">this</span>); <span class="comment">//RunnableQueue的实现类，自己定义</span></span><br><span class="line">        <span class="keyword">this</span>.keepAliveTime = keepAliveTime;</span><br><span class="line">        <span class="keyword">this</span>.timeUnit = timeUnit;</span><br><span class="line">        <span class="keyword">this</span>.init(); <span class="comment">//初始化函数</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ---init()</span></span><br><span class="line"></span><br><span class="line"> <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">init</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/*启动本线程池*/</span></span><br><span class="line">        <span class="keyword">this</span>.start();<span class="comment">//BaseThreadPool 继承了 Thread,原因后面说</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">/*初始化initSize个线程在线程池中*/</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; initSize; i++) &#123;</span><br><span class="line">            newThread();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//  newThread()</span></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">newThread</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="comment">/*创建工作线程，然后让工作线程等待任务到来被唤醒*/</span></span><br><span class="line">        Woker woker = <span class="keyword">new</span> Woker(runnableQueue);</span><br><span class="line">        Thread thread = threadFactory.createThread(woker);</span><br><span class="line"></span><br><span class="line">        <span class="comment">/*将线程和任务包装在一起*/</span></span><br><span class="line">        ThreadTask threadTask = <span class="keyword">new</span> ThreadTask(thread,woker);</span><br><span class="line">        threadQueue.offer(threadTask);</span><br><span class="line">        <span class="keyword">this</span>.activityCount++;</span><br><span class="line">        <span class="comment">/*启动刚才新建的线程*/</span></span><br><span class="line">        thread.start();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// 再看看DefaultThreadFactory，就是</span></span><br><span class="line"><span class="comment">/*工厂创建一个新的线程*/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DefaultThreadFactory</span> <span class="keyword">implements</span> <span class="title">ThreadFactory</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> AtomicInteger GROUP_COUNTER  = <span class="keyword">new</span> AtomicInteger(<span class="number">0</span>); <span class="comment">//线程组号</span></span><br><span class="line">    <span class="comment">//计数</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span>  AtomicInteger COUNTER = <span class="keyword">new</span> AtomicInteger(<span class="number">1</span>);</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> ThreadGroup group  = <span class="keyword">new</span> ThreadGroup(<span class="string">"MyThreadPool-"</span> + GROUP_COUNTER.getAndIncrement());</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Thread <span class="title">createThread</span><span class="params">(Runnable runnable)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> Thread(group,runnable,<span class="string">"threadPool-"</span> + COUNTER.getAndIncrement());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里说明一下，我们是可以这样<code>new Thread(new Runnable(){....}).start</code>创建并且启动线程的。就是调用<code>Thread</code>需要传入一个<code>Runnable</code>实例的构造函数实例化<code>Thread</code>类，通过重写<code>Runnable</code>里面的<code>run</code>方法就可以指定线程在启动的时候需要做的事。</p>
+<p>我们看到<code>DefaultThreadFactory</code>就只有一个创建线程的方法，就是把线程启动后需要做的任务指定一下和重命名一下线程，就是用上面说明的方法。所以传给需要传给<code>createThread</code>方法一个实现<code>Runnable</code>的类。而这个类就是<code>Woker</code></p>
+<p>我们看下Woker的代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//------------Woker BaseThreadPool依赖的类</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/*工作线程的任务*/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Woker</span> <span class="keyword">implements</span> <span class="title">Runnable</span></span>&#123;</span><br><span class="line">    <span class="comment">/*任务队列，方便后面取出任务*/</span></span><br><span class="line">    <span class="keyword">private</span> RunnableQueue runnableQueue;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*方便判断该内部任务对应的线程是否运行，确保可见性!*/</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">boolean</span> running = <span class="keyword">true</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Woker</span><span class="params">(RunnableQueue runnableQueue)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.runnableQueue = runnableQueue;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">/*当前对应的线程正在运行并且没有被中断*/</span></span><br><span class="line">        <span class="keyword">while</span> (running &amp;&amp; !Thread.currentThread().isInterrupted())&#123;</span><br><span class="line">            <span class="comment">//调用take的时候，如果任务队列没任务就会阻塞在这，直到拿到任务</span></span><br><span class="line">            Runnable task = runnableQueue.take();</span><br><span class="line">            task.run();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">stop</span><span class="params">()</span></span>&#123;</span><br><span class="line">        running = <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们看到<code>run</code>方法，这个任务就是去到<strong>任务队列</strong>里面取任务，然后执行。直到当前工作停止或者当前线程被中断。而这个<strong>任务队列</strong>就是我们在调用构造函数的时候指定的对象，也就是这段代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">接下来看下`LinkRunnableQueue`是怎么实现的</span><br><span class="line"></span><br><span class="line">```java</span><br><span class="line">public class LinkRunnableQueue implements RunnableQueue&#123;//BaseThreadPool依赖的类</span><br><span class="line"></span><br><span class="line">    //指定任务队列的大小</span><br><span class="line">    private int limit;</span><br><span class="line"></span><br><span class="line">    //也是使用BaseThreadPool传进来的默认拒绝策略</span><br><span class="line">    private DenyPolicy denyPolicy;</span><br><span class="line"></span><br><span class="line">    //这里传进BaseThreadPool实例</span><br><span class="line">    private ThreadPool threadPool;</span><br><span class="line"></span><br><span class="line">   	//这个就是真正存储Runnable实例对象的数据结构！也就是一个链表</span><br><span class="line">    private LinkedList&lt;Runnable&gt; queue = new LinkedList&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    //构造函数，也就是初始化这个类的属性</span><br><span class="line">    public LinkRunnableQueue(int queueSize,DenyPolicy denyPolicy,ThreadPool pool) &#123;</span><br><span class="line">        this.limit = queueSize;</span><br><span class="line">        this.denyPolicy = denyPolicy;</span><br><span class="line">        this.threadPool = pool;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    //任务队列添加任务，这个方法一般由线程池的execute方法调用</span><br><span class="line">    @Override</span><br><span class="line">    public void offer(Runnable runnable) &#123;</span><br><span class="line">        //因为任务队列只有一个，可能会有多个线程同时操作任务队列，所以要考虑同步问题</span><br><span class="line">        //取得queue的锁才能加入任务，拿不到所就进入queue的entrySet</span><br><span class="line">        synchronized (queue)&#123;</span><br><span class="line">        if(queue.size() &gt; limit)&#123;</span><br><span class="line">            //如果此时任务队列超过限制的值，那么就拒绝！</span><br><span class="line">            denyPolicy.reject(runnable,threadPool);</span><br><span class="line">        &#125;else&#123;</span><br><span class="line">            //把任务加入到任务队列呗</span><br><span class="line">            queue.addLast(runnable);</span><br><span class="line">            //唤醒等待的线程，这些线程在queue的waitSet里面，要结合take方法</span><br><span class="line">            queue.notifyAll();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">   	//线程从任务队列里面拿任务，如果拿不到就会阻塞，直到有任务来并且抢到</span><br><span class="line">    @Override</span><br><span class="line">    public Runnable take() &#123;</span><br><span class="line">        //这里之前也说过了，要先拿到锁才能拿任务</span><br><span class="line">        synchronized (queue)&#123;</span><br><span class="line">            //如果任务队列为空，那么肯定拿不了，所以就等待呗</span><br><span class="line">            while (queue.size() == 0)&#123;</span><br><span class="line">                try &#123;</span><br><span class="line">                    //这个线程在这里就等待让出锁，直到执行offer方法从而被唤醒，然后</span><br><span class="line">                    //再重新抢到锁，这里是个循环，如果被唤醒后，也抢到锁了，但是队列</span><br><span class="line">                    //还是空的话，继续等待</span><br><span class="line">                    queue.wait();</span><br><span class="line">                &#125; catch (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            //到这里执行这个方法的线程就是抢到锁了，然后得到任务啦！</span><br><span class="line">            return queue.removeFirst();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    //返回调用该方法时任务队列有多少个任务在等待</span><br><span class="line">    @Override</span><br><span class="line">    public int size() &#123;</span><br><span class="line">       synchronized (queue)&#123;</span><br><span class="line">           return queue.size();</span><br><span class="line">       &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>代码的注释已经解释得很清楚了，这里主要是了解为什么Work中的<code>Runnable task = runnableQueue.take()</code>中没有任务会阻塞等待，本质就是</p>
+<p>1 拿到queue对象锁之后，任务队列没任务，释放掉真正存储任务的对象的对象锁，从而进入该对象的waitSet队列里面等待被唤醒。</p>
+<p>2 当然如果没拿到锁也会一直等待拿到锁，然后像1一样.</p>
+<blockquote>
+<p>如果看到这里看不太明白的，大家可以先回去看一下java线程的基本知识和<a href="https://juejin.im/post/5ccd84dee51d456e3428c1af" target="_blank" rel="noopener"><code>synchronized</code></a>的详解，这样可以更好地把知识串联起来！</p>
+</blockquote>
+<p>接下来我们再看下 <strong>工作队列</strong>是什么样子。</p>
+<p>ThreadTask在BaseThreadPool的一个内部类</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//把工作线程和内部任务绑定在一起</span></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">ThreadTask</span></span>&#123;</span><br><span class="line">        Thread thread;</span><br><span class="line">        Woker woker;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="title">ThreadTask</span><span class="params">(Thread thread, Woker woker)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">this</span>.thread = thread;</span><br><span class="line">            <span class="keyword">this</span>.woker = woker;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>从上面的代码我们知道，ThreadTask就是把一个工作线程和一个工作线程的任务封装在一起而已，这里主要是为了后面<strong>线程池关闭</strong>的时候可以让线程需要做的任务停止！</p>
+<p>线程池关闭的操作 ，<code>BaseThreadPool</code>类的方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*shutdown 就要把 Woker 给停止 和 对应的线程给中断*/</span></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">shutDown</span><span class="params">()</span> </span>&#123;</span><br><span class="line">      <span class="keyword">synchronized</span> (<span class="keyword">this</span>)&#123;</span><br><span class="line">          <span class="keyword">if</span>(isShutDown())</span><br><span class="line">              <span class="keyword">return</span>;</span><br><span class="line">          <span class="comment">//设置标志位，让线程池线程也执行完run方法，然后退出线程。</span></span><br><span class="line">          isShutdown = <span class="keyword">true</span>;</span><br><span class="line">          <span class="comment">/*全部线程停止工作*/</span></span><br><span class="line">          <span class="keyword">for</span> (ThreadTask task: threadQueue</span><br><span class="line">               ) &#123;</span><br><span class="line">              <span class="comment">//1 这里就是把Woker实例对象的running置为false</span></span><br><span class="line">              task.woker.stop();</span><br><span class="line">              <span class="comment">//2 中断执行对应任务的线程</span></span><br><span class="line">              task.thread.interrupt();</span><br><span class="line">          &#125;</span><br><span class="line">      &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到关闭线程池，就是遍历存放工作线程的队列，<strong>1和2都是破坏Woker对象的while循环条件</strong>，从而让Woker对象的<code>run</code>方法执行结束。（这里大家可以看下Woker这个类的<code>run</code>方法就明白我说的了）</p>
+<p>我们在开始的时候说过，<code>BaseThreadPool</code>启动的时候其实也是一个线程，在它的<code>init</code>方法中就调用了<code>start</code>方法表示执行<code>run</code>里面的逻辑，之前我们看了run的代码，但是没分析，现在就来分析吧</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123; <span class="comment">//BaseThreadPool类的方法</span></span><br><span class="line">        <span class="comment">//还记得shutDown（）方法里面的 isShutdown = true语句吗?</span></span><br><span class="line">        <span class="comment">//作用就是为了让这里下一次判断while循环的时候退出，然后执行完run啦！</span></span><br><span class="line">        <span class="keyword">while</span> (!isShutdown &amp;&amp; !isInterrupted())&#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                timeUnit.sleep(keepAliveTime);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                <span class="comment">//如果线程池这个线程被中断</span></span><br><span class="line">                <span class="comment">//到这里就是关闭线程池了,也是把isShutdown设置为我true！</span></span><br><span class="line">                isShutdown = <span class="keyword">true</span>;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line"><span class="comment">//          这里同步代码块，保证了每次访问的时候都是最新的数据！</span></span><br><span class="line">            <span class="keyword">synchronized</span> (<span class="keyword">this</span>)&#123;</span><br><span class="line">                <span class="keyword">if</span>(isShutdown) <span class="keyword">break</span>;</span><br><span class="line">				<span class="comment">//任务队列不为空，并且当前可以工作的线程小于coreCount，那么说明工作				   //线程数不够，就先增加到maxSize.</span></span><br><span class="line">				<span class="comment">//比如说coreSize 为20，initSize为10，maxSize 为30,</span></span><br><span class="line">				<span class="comment">//突然一下子来了20分线程进来，但是工作线程只有15个，由于某种原因可能</span></span><br><span class="line">                <span class="comment">//那15个工作现场还没执行完，那么此时的任务队列肯定还有剩余的，发现此</span></span><br><span class="line">                <span class="comment">//时线程还没到coreSize</span></span><br><span class="line">				<span class="comment">//那么就直接开maxSize个线程先把</span></span><br><span class="line">                <span class="comment">//如果发现现在工作的的线程已经过了coreSize就先不增加线程数啦</span></span><br><span class="line">                <span class="keyword">if</span>(runnableQueue.size() &gt; <span class="number">0</span> &amp;&amp; activityCount &lt; coreSize)&#123;</span><br><span class="line">                    <span class="keyword">for</span> (<span class="keyword">int</span> i = runnableQueue.size(); i &lt; maxSize; i++) &#123;</span><br><span class="line">                        newThread();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line"><span class="comment">//                任务队列为空，并且当前可以工作的线程数大于coreCount，工作线程数太多啦！那么就减少到coreCount基本大小把</span></span><br><span class="line">                <span class="keyword">if</span>(runnableQueue.size() == <span class="number">0</span> &amp;&amp;  activityCount &gt; coreSize)&#123;</span><br><span class="line">                    <span class="keyword">for</span> (<span class="keyword">int</span> i = coreSize; i &lt; activityCount; i++) &#123;</span><br><span class="line">                        removeThread();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">//----------removeThread()</span></span><br><span class="line"><span class="comment">//   线程池中去掉某个工作线程,这里的操作是不是很类似shutDown的内容</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">removeThread</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.activityCount--;</span><br><span class="line">        ThreadTask task = threadQueue.remove();</span><br><span class="line">        task.woker.stop();<span class="comment">//就是破坏Woker对象的while循环的条件</span></span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>上面的注释讲解的比较清楚，有啥不懂的多看几篇，自己模拟一下思路就好啦!</p>
+<p>在<code>run</code>方法中，重要的是关于线程池中的线程数量的动态变化的部分。</p>
+<p>coreSize:线程池基本的大小，相当于一个分界线</p>
+<p>initSize:线程池的初始化大小，这枚啥好说的</p>
+<p>activityCount：当前工作线程的数量</p>
+<p>maxSIze:线程池中最大的线程数目</p>
+<p>说一下它们之间的关系</p>
+<p>任务队列不为空的情况下</p>
+<ol>
+<li><p>activityCount &lt; coreSize的时候，就说明线程池的数量没到达基本大小，就新增线程，直接新增到最大！</p>
+</li>
+<li><p>activityCount &gt;= coreSize的时候，说明当前线程池的工作线程数量已经到达基本大小，有任务来就需要等一下啦！</p>
+</li>
+</ol>
+<blockquote>
+<p>注意：这里的扩容机制只是简单地扩容，Java中实现的线程池并不是像我说那样扩容的，这就解决了开头的问题啦，具体的到时候还是分析源码的时候再说把！这里只是简单地实现一下！</p>
+</blockquote>
+<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p>测试代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> blogDemo.ThreadDemo;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.TimeUnit;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.atomic.AtomicInteger;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        ThreadPool threadPool = <span class="keyword">new</span> BaseThreadPool(<span class="number">4</span>,<span class="number">30</span>,<span class="number">6</span>,<span class="number">30</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">20</span>; i++) &#123;</span><br><span class="line">            threadPool.execute(() -&gt; &#123;</span><br><span class="line">                System.out.println(Thread.currentThread().getName() + <span class="string">" is running and done."</span>);</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>测试结果</p>
+<p><img src="http://ww1.sinaimg.cn/large/006ozI4Yly1g2xozczuxrj30eq0b90t0.jpg" alt></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本片文章就写到这里啦，大家看文章的时候可以一边看源码一边看解释，这样会更加容易理解，希望对读者后面理解java自带线程池有所帮助，下一篇文章就分析java自带的线程池的源码啦！</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/多线程/" rel="tag"># 多线程</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/05/04/多线程规范/" rel="next" title="多线程规范">
+                <i class="fa fa-chevron-left"></i> 多线程规范
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/head.JPG" alt="JieMing小铭">
+            
+              <p class="site-author-name" itemprop="name">JieMing小铭</p>
+              <p class="site-description motion-element" itemprop="description">记录学习的过程，加深印象！</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">15</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">7</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用Java的线程池"><span class="nav-number">2.</span> <span class="nav-text">使用Java的线程池</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总览"><span class="nav-number">3.</span> <span class="nav-text">总览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#过程"><span class="nav-number">4.</span> <span class="nav-text">过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#测试"><span class="nav-number">5.</span> <span class="nav-text">测试</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">6.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JieMing小铭</span>
+
+  
+</div>
+
+
+  <div class="powered-by"></div>
+
+
+
+  <span class="post-meta-divider"></span>
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
