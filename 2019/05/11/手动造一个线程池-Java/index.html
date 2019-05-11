@@ -79,21 +79,22 @@
 
 
 
-<meta name="description" content="前言本次自己实现一个简单的线程池，主要是为了后续看`ThreadPool`的源码做准备的，是从别人的代码中改进的，从看别人的源码中学到一些东西，所以特意把这篇文章写出来，方便以后自己去回顾自己是如何学习。当然也希望分享出来可以对别人产生良好的影响！  使用Java的线程池在自己实现一个线程池之前，首先要知道怎么用。因为知道怎么用之后才能去理解一些代码的编写。关于怎么用这里就不再多加赘述了，百度或者">
+<meta name="description" content="前言​            本次自己实现一个简单的线程池，主要是为了后续看ThreadPool的源码做准备的，是从别人的代码中改进的，从看别人的源码中学到一些东西，所以特意把这篇文章写出来，方便以后自己去回顾自己是如何学习。当然也希望分享出来可以对别人产生良好的影响！  使用Java的线程池​        在自己实现一个线程池之前，首先要知道怎么用。因为知道怎么用之后才能去理解一些代码的编写。">
 <meta name="keywords" content="多线程">
 <meta property="og:type" content="article">
 <meta property="og:title" content="手动造一个线程池(Java)">
 <meta property="og:url" content="http://yoursite.com/2019/05/11/手动造一个线程池-Java/index.html">
 <meta property="og:site_name" content="小铭同学的博客">
-<meta property="og:description" content="前言本次自己实现一个简单的线程池，主要是为了后续看`ThreadPool`的源码做准备的，是从别人的代码中改进的，从看别人的源码中学到一些东西，所以特意把这篇文章写出来，方便以后自己去回顾自己是如何学习。当然也希望分享出来可以对别人产生良好的影响！  使用Java的线程池在自己实现一个线程池之前，首先要知道怎么用。因为知道怎么用之后才能去理解一些代码的编写。关于怎么用这里就不再多加赘述了，百度或者">
+<meta property="og:description" content="前言​            本次自己实现一个简单的线程池，主要是为了后续看ThreadPool的源码做准备的，是从别人的代码中改进的，从看别人的源码中学到一些东西，所以特意把这篇文章写出来，方便以后自己去回顾自己是如何学习。当然也希望分享出来可以对别人产生良好的影响！  使用Java的线程池​        在自己实现一个线程池之前，首先要知道怎么用。因为知道怎么用之后才能去理解一些代码的编写。">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Yly1g2xpbdulvij33uw2klnpk.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Yly1g2wk4r3qk4j30l70jf0th.jpg">
+<meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Yly1g2wnd46e8ij30t11egtam.jpg">
 <meta property="og:image" content="http://ww1.sinaimg.cn/large/006ozI4Yly1g2xozczuxrj30eq0b90t0.jpg">
-<meta property="og:updated_time" content="2019-05-11T14:02:44.356Z">
+<meta property="og:updated_time" content="2019-05-11T14:06:48.209Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="手动造一个线程池(Java)">
-<meta name="twitter:description" content="前言本次自己实现一个简单的线程池，主要是为了后续看`ThreadPool`的源码做准备的，是从别人的代码中改进的，从看别人的源码中学到一些东西，所以特意把这篇文章写出来，方便以后自己去回顾自己是如何学习。当然也希望分享出来可以对别人产生良好的影响！  使用Java的线程池在自己实现一个线程池之前，首先要知道怎么用。因为知道怎么用之后才能去理解一些代码的编写。关于怎么用这里就不再多加赘述了，百度或者">
+<meta name="twitter:description" content="前言​            本次自己实现一个简单的线程池，主要是为了后续看ThreadPool的源码做准备的，是从别人的代码中改进的，从看别人的源码中学到一些东西，所以特意把这篇文章写出来，方便以后自己去回顾自己是如何学习。当然也希望分享出来可以对别人产生良好的影响！  使用Java的线程池​        在自己实现一个线程池之前，首先要知道怎么用。因为知道怎么用之后才能去理解一些代码的编写。">
 <meta name="twitter:image" content="http://ww1.sinaimg.cn/large/006ozI4Yly1g2xpbdulvij33uw2klnpk.jpg">
 
 
@@ -356,10 +357,10 @@
       
 
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><pre><code>本次自己实现一个简单的线程池，主要是为了后续看`ThreadPool`的源码做准备的，是从别人的代码中改进的，从看别人的源码中学到一些东西，所以特意把这篇文章写出来，方便以后自己去回顾自己是如何学习。当然也希望分享出来可以对别人产生良好的影响！
-</code></pre><p><img src="http://ww1.sinaimg.cn/large/006ozI4Yly1g2xpbdulvij33uw2klnpk.jpg" alt></p>
-<h2 id="使用Java的线程池"><a href="#使用Java的线程池" class="headerlink" title="使用Java的线程池"></a>使用Java的线程池</h2><pre><code>在自己实现一个线程池之前，首先要知道怎么用。因为知道怎么用之后才能去理解一些代码的编写。关于怎么用这里就不再多加赘述了，百度或者谷歌一下就好，为了不让读者花过多的时间去找，我找了[一篇文章](https://www.cnblogs.com/zhicheng-hu/p/9877684.html)，说得比较清楚。
-</code></pre><h2 id="总览"><a href="#总览" class="headerlink" title="总览"></a>总览</h2><p><img src="http://ww1.sinaimg.cn/large/006ozI4Yly1g2wk4r3qk4j30l70jf0th.jpg" alt></p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>​            本次自己实现一个简单的线程池，主要是为了后续看<code>ThreadPool</code>的源码做准备的，是从别人的代码中改进的，从看别人的源码中学到一些东西，所以特意把这篇文章写出来，方便以后自己去回顾自己是如何学习。当然也希望分享出来可以对别人产生良好的影响！</p>
+<p><img src="http://ww1.sinaimg.cn/large/006ozI4Yly1g2xpbdulvij33uw2klnpk.jpg" alt></p>
+<h2 id="使用Java的线程池"><a href="#使用Java的线程池" class="headerlink" title="使用Java的线程池"></a>使用Java的线程池</h2><p>​        在自己实现一个线程池之前，首先要知道怎么用。因为知道怎么用之后才能去理解一些代码的编写。关于怎么用这里就不再多加赘述了，百度或者谷歌一下就好，为了不让读者花过多的时间去找，我找了<a href="https://www.cnblogs.com/zhicheng-hu/p/9877684.html" target="_blank" rel="noopener">一篇文章</a>，说得比较清楚。</p>
+<h2 id="总览"><a href="#总览" class="headerlink" title="总览"></a>总览</h2><p><img src="http://ww1.sinaimg.cn/large/006ozI4Yly1g2wk4r3qk4j30l70jf0th.jpg" alt></p>
 <p>我们可以看到，除了<code>Thread</code>和<code>Runnable</code>，其他都是我们自己定义的，下面我们来逐一说明。</p>
 <p>在我们开始分析之前，先说下线程池的工作流程，也方便大家后面看的时候心理有一个底。</p>
 <p>线程池顾名思义就是一个存放多个线程的池子。那么在计算机语言中，我们就是用数据结构来存放线程，在本线程池中用的是一个队列来存放要处理任务的线程。所以在线程池一启动，线程池里面就应该有一定数量的线程数目了，那么这个线程的数目是多少我们先不用管，只需要知道有一些线程在等待用户把所需要线程执行的任务放进池子里面。然后线程池里面的线程就会自动帮你执行任务啦。</p>
@@ -398,8 +399,8 @@
 </li>
 </ol>
 <p>先看看我们这个整个线程池的流程图，这样设计的时候就知道怎么回事了！</p>
-<pre><code>![](http://ww1.sinaimg.cn/large/006ozI4Yly1g2wnd46e8ij30t11egtam.jpg)
-</code></pre><h2 id="过程"><a href="#过程" class="headerlink" title="过程"></a>过程</h2><p> BaseThreadPool</p>
+<p>​        <img src="http://ww1.sinaimg.cn/large/006ozI4Yly1g2wnd46e8ij30t11egtam.jpg" alt></p>
+<h2 id="过程"><a href="#过程" class="headerlink" title="过程"></a>过程</h2><p> BaseThreadPool</p>
 <p>先看看这个类的基本属性</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BaseThreadPool</span> <span class="keyword">extends</span> <span class="title">Thread</span> <span class="keyword">implements</span> <span class="title">ThreadPool</span> </span>&#123; </span><br><span class="line">	</span><br><span class="line">    <span class="comment">/*初始化线程数*/</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> initSize;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*最大工作线程数*/</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> maxSize;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*核心线程数*/</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> coreSize;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*当前活跃线程数*/</span></span><br><span class="line">    <span class="keyword">private</span>  <span class="keyword">int</span> activityCount = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*指定任务队列的大小数*/</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> queueSize;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*创建工作线程的工厂，在构造方法由线程池规定好*/</span></span><br><span class="line">    <span class="keyword">private</span> ThreadFactory threadFactory;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*1. 任务队列，在构造方法由线程池规定好*/</span></span><br><span class="line">    <span class="keyword">private</span> RunnableQueue runnableQueue;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2. 工作队列</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> Queue&lt;ThreadTask&gt; threadQueue = <span class="keyword">new</span> ArrayDeque&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//3. 本线程池默认的拒绝策略</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> DenyPolicy DEFAULT_DENY_POLICY = <span class="keyword">new</span> DenyPolicy.IgnoreDenyPolicy();</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*4. 默认的线程工厂*/</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> ThreadFactory DEFAULT_THREAD_FACTORY =<span class="keyword">new</span> DefaultThreadFactory();</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*线程池是否关闭，默认为false*/</span></span><br><span class="line">    <span class="keyword">boolean</span> isShutdown = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span>  <span class="keyword">long</span> keepAliveTime;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span>  TimeUnit timeUnit ;</span><br></pre></td></tr></table></figure>
 <p>由上面的属性我们知道，我们自定义的线程池这个类是依赖于几个类的。</p>
